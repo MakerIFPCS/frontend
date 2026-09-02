@@ -93,7 +93,7 @@ function ThemeSettings({ userId }: { userId: string }) {
         Tema da interface
       </label>
       <p className="mt-1 text-sm text-[#56617d]">
-        Escolha como deseja visualizar o sistema. Sua preferência ficará salva neste navegador para este usuário.
+        
       </p>
       <select
         id="theme-preference"
