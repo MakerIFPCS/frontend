@@ -80,10 +80,10 @@ export default function Header({ authenticated, userName, userId }: HeaderProps)
   const profileHref = userRole === 'ADMIN' ? '/admin' : currentUserId ? `/home/${currentUserId}` : '/';
 
   return (
-    <header className="relative z-20 border-b border-white/10 bg-[#050b33] px-5 py-4 text-white shadow-md sm:px-8">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-6">
+    <header className="relative z-20 border-b border-white/10 bg-[#050b33] px-4 py-3.5 text-white shadow-md sm:px-8 sm:py-4">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 sm:gap-6">
         {/* GRUPO ESQUERDA: LOGO + NAVEGAÇÃO FIXOS */}
-        <div className="flex items-center gap-6 xl:gap-8">
+        <div className="flex min-w-0 items-center gap-5 xl:gap-8">
           <Link href="/" className="shrink-0 transition-opacity hover:opacity-95">
             <Image
               src="/lab-maker-logo.png"
@@ -96,30 +96,30 @@ export default function Header({ authenticated, userName, userId }: HeaderProps)
           </Link>
 
           {/* Links de Navegação Desktop */}
-          <nav className="hidden items-center gap-6 text-sm font-semibold lg:flex">
-            <Link href="/" className="transition-colors hover:text-[#00ff9d]">Início</Link>
-            <Link href="/materiais" className="transition-colors hover:text-[#00ff9d]">Materiais</Link>
-            <Link href="/maquinas" className="transition-colors hover:text-[#00ff9d]">Máquinas</Link>
+          <nav className="hidden items-center gap-5 text-sm font-semibold lg:flex xl:gap-6">
+            <Link href="/" className="inline-flex items-center whitespace-nowrap py-1 transition-colors hover:text-[#00ff9d]">Início</Link>
+            <Link href="/materiais" className="inline-flex items-center whitespace-nowrap py-1 transition-colors hover:text-[#00ff9d]">Materiais</Link>
+            <Link href="/maquinas" className="inline-flex items-center whitespace-nowrap py-1 transition-colors hover:text-[#00ff9d]">Máquinas</Link>
             <Link
               href="/capacitacoes"
               aria-current={isCapacitacoes ? 'page' : undefined}
-              className={`transition-colors hover:text-[#00ff9d] ${
+              className={`inline-flex items-center whitespace-nowrap border-b-2 py-1 transition-colors hover:text-[#00ff9d] ${
                 isCapacitacoes
-                  ? 'border-b-2 border-[#7000ff] pb-1 text-[#00ff9d]'
-                  : ''
+                  ? 'border-[#7000ff] text-[#00ff9d]'
+                  : 'border-transparent'
               }`}
             >
               Capacitações
             </Link>
-            <Link href="/pedidos" className="transition-colors hover:text-[#00ff9d]">Pedidos</Link>
-            <Link href="/emprestimos" className="transition-colors hover:text-[#00ff9d]">Empréstimos</Link>
-            <Link href="/normas" className="transition-colors hover:text-[#00ff9d]">Normas</Link>
-            {userRole === 'ADMIN' && <Link href="/admin" className="text-[#00ff9d]">Painel ADM</Link>}
+            <Link href="/pedidos" className="inline-flex items-center whitespace-nowrap py-1 transition-colors hover:text-[#00ff9d]">Pedidos</Link>
+            <Link href="/emprestimos" className="inline-flex items-center whitespace-nowrap py-1 transition-colors hover:text-[#00ff9d]">Empréstimos</Link>
+            <Link href="/normas" className="inline-flex items-center whitespace-nowrap py-1 transition-colors hover:text-[#00ff9d]">Normas</Link>
+            {userRole === 'ADMIN' && <Link href="/admin" className="inline-flex items-center whitespace-nowrap py-1 text-[#00ff9d]">Painel ADM</Link>}
           </nav>
         </div>
 
         {/* GRUPO DIREITA: CORES DO LAB MAKER E AÇÕES DO USUÁRIO */}
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex shrink-0 items-center gap-3 sm:gap-4">
           <div className="hidden items-center gap-2 sm:flex" aria-label="Cores do Lab Maker">
             <span className="h-3.5 w-3.5 rounded-full bg-[#ff2a55]" />
             <span className="h-3.5 w-3.5 rounded-full bg-[#7000ff]" />
@@ -128,7 +128,7 @@ export default function Header({ authenticated, userName, userId }: HeaderProps)
           </div>
 
           {isAuth ? (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5 sm:gap-3">
               <NotificationBell
                 authenticated={Boolean(isAuth && storedToken && currentUserId && userRole)}
                 userId={currentUserId}
@@ -137,12 +137,12 @@ export default function Header({ authenticated, userName, userId }: HeaderProps)
               <Link
                 href={profileHref}
                 title="Ir para o meu perfil"
-                className="flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-3 py-1.5 text-sm font-semibold text-white transition-all hover:border-[#00ff9d] hover:bg-white/10"
+                className="flex min-h-9 items-center gap-2 rounded-full border border-white/20 bg-white/5 px-3 py-1.5 text-sm font-semibold text-white transition-all hover:border-[#00ff9d] hover:bg-white/10"
               >
-                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#7000ff] text-white">
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#7000ff] text-white">
                   <User className="h-3.5 w-3.5" />
                 </div>
-                {displayName && <span>{displayName}</span>}
+                {displayName && <span className="max-w-[140px] truncate">{displayName}</span>}
               </Link>
 
               <button
@@ -150,26 +150,26 @@ export default function Header({ authenticated, userName, userId }: HeaderProps)
                 onClick={handleLogout}
                 title="Sair"
                 aria-label="Sair"
-                className="inline-flex items-center gap-2 rounded-full border border-white/25 px-3 py-2 text-xs font-semibold text-white/75 transition-colors hover:border-red-400 hover:bg-red-500/10 hover:text-red-300"
+                className="inline-flex min-h-9 items-center gap-2 rounded-full border border-white/25 px-3 py-1.5 text-xs font-semibold text-white/75 transition-colors hover:border-red-400 hover:bg-red-500/10 hover:text-red-300"
               >
                 <LogOut className="h-4 w-4" /> Sair
               </button>
             </div>
           ) : (
-            <>
+            <div className="flex items-center gap-2.5">
               <Link
                 href="/login"
-                className="inline-flex items-center gap-2 rounded-full border border-white/40 px-3 py-2 text-xs font-bold transition-colors hover:bg-white/10 sm:px-4 sm:text-sm"
+                className="inline-flex min-h-9 items-center justify-center gap-2 rounded-full border border-white/40 px-3.5 py-2 text-xs font-bold transition-colors hover:bg-white/10 sm:px-4 sm:text-sm"
               >
                 <LogIn className="h-4 w-4" /> Entrar
               </Link>
               <Link
                 href="/Cadastro"
-                className="hidden items-center gap-2 rounded-full bg-[#00ff9d] px-4 py-2 text-sm font-bold text-[#050b33] transition-transform hover:-translate-y-0.5 sm:inline-flex"
+                className="hidden min-h-9 items-center justify-center gap-2 rounded-full bg-[#00ff9d] px-4 py-2 text-sm font-bold text-[#050b33] transition-transform hover:-translate-y-0.5 sm:inline-flex"
               >
                 <UserPlus className="h-4 w-4" /> Criar conta
               </Link>
-            </>
+            </div>
           )}
 
           {/* BOTÃO DO MENU MOBILE */}

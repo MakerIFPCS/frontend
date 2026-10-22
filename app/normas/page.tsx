@@ -100,7 +100,7 @@ export default function NormasPage() {
 
       <main className="relative flex-1 overflow-hidden">
         {/* CONTEÚDO PRINCIPAL */}
-        <div className="relative z-10 mx-auto w-full max-w-6xl px-6 py-10 md:px-10 md:py-14">
+        <div className="relative z-10 mx-auto w-full max-w-6xl px-5 py-10 sm:px-8 md:px-10 md:py-14">
           
           {/* CABEÇALHO DA PÁGINA */}
           <div className="mx-auto mb-10 max-w-3xl text-center">
@@ -128,7 +128,7 @@ export default function NormasPage() {
 
           {/* AVISO PRINCIPAL */}
           <div className="mb-8 rounded-2xl border border-[#dfe5ef] bg-white p-5 shadow-lg shadow-[#050b33]/5 md:p-6">
-            <div className="flex gap-4">
+            <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#050b33]">
                 <ShieldCheck className="h-5 w-5 text-white" />
               </div>
@@ -149,16 +149,16 @@ export default function NormasPage() {
           </div>
 
           {/* CARDS DAS NORMAS */}
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+          <div className="grid grid-cols-1 items-stretch gap-6 md:grid-cols-2">
             {normas.map((norma) => {
               const Icon = norma.icon;
 
               return (
                 <section
                   key={norma.title}
-                  className="group rounded-2xl border border-[#e2e6ee] bg-white p-6 shadow-lg shadow-[#050b33]/5 transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-[#050b33]/10"
+                  className="group flex h-full flex-col rounded-2xl border border-[#e2e6ee] bg-white p-6 shadow-lg shadow-[#050b33]/5 transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-[#050b33]/10"
                 >
-                  <div className="flex items-start gap-4">
+                  <div className="flex items-center gap-4">
                     <div
                       className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl"
                       style={{

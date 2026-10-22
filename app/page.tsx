@@ -50,27 +50,27 @@ export default function HomePage() {
           />
           <div className="absolute inset-0 bg-gradient-to-r from-[#050b33] via-[#050b33]/80 to-[#050b33]/25" />
 
-          <div className="relative mx-auto flex min-h-[560px] max-w-6xl items-center px-8 py-20 lg:px-12">
+          <div className="relative mx-auto flex min-h-[520px] max-w-6xl items-center px-5 py-16 sm:min-h-[560px] sm:px-8 sm:py-20 lg:px-12">
             <div className="max-w-2xl">
-              <p className="mb-5 text-sm font-bold uppercase tracking-[0.28em] text-[#00ff9d]">
+              <p className="mb-4 text-xs font-bold uppercase tracking-[0.24em] text-[#00ff9d] sm:mb-5 sm:text-sm sm:tracking-[0.28em]">
                 Centro de empreendedorismo e inovação
               </p>
-              <h1 className="text-5xl font-bold leading-[1.05] tracking-tight md:text-7xl">
+              <h1 className="text-4xl font-bold leading-[1.08] tracking-tight sm:text-5xl md:text-7xl">
                 Ideias ganham forma aqui.
               </h1>
-              <p className="mt-7 max-w-xl text-lg leading-8 text-white/80 md:text-xl">
+              <p className="mt-6 max-w-xl text-base leading-7 text-white/80 sm:mt-7 sm:text-lg sm:leading-8 md:text-xl">
                 O Lab Maker é um espaço para aprender, criar e transformar projetos em realidade com tecnologia, colaboração e muita curiosidade.
               </p>
-              <div className="mt-9 flex flex-wrap gap-4">
+              <div className="mt-8 flex flex-wrap items-center gap-3.5 sm:mt-9 sm:gap-4">
                 <Link
                   href="/Cadastro"
-                  className="inline-flex items-center gap-2 bg-[#00ff9d] px-5 py-3 font-bold text-[#050b33] transition-transform hover:-translate-y-0.5"
+                  className="inline-flex items-center justify-center gap-2 bg-[#00ff9d] px-5 py-3 font-bold text-[#050b33] transition-transform hover:-translate-y-0.5"
                 >
                   Comece a criar <ArrowRight className="h-4 w-4" />
                 </Link>
                 <Link
                   href="/login"
-                  className="inline-flex items-center gap-2 border border-white/50 px-5 py-3 font-bold text-white transition-colors hover:bg-white/10"
+                  className="inline-flex items-center justify-center gap-2 border border-white/50 px-5 py-3 font-bold text-white transition-colors hover:bg-white/10"
                 >
                   Já tenho uma conta
                 </Link>
@@ -79,13 +79,13 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="relative z-10 mx-auto max-w-6xl px-8 py-16 lg:px-12">
+        <section className="relative z-10 mx-auto max-w-6xl px-5 py-14 sm:px-8 sm:py-16 lg:px-12">
           <div className="max-w-2xl">
             <p className="text-sm font-bold uppercase tracking-[0.2em] text-[#7000ff]">Um lugar para fazer</p>
-            <h2 className="mt-3 text-3xl font-bold text-[#050b33] md:text-4xl">Aprenda fazendo, compartilhe descobertas.</h2>
+            <h2 className="mt-3 text-3xl font-bold leading-tight text-[#050b33] md:text-4xl">Aprenda fazendo, compartilhe descobertas.</h2>
           </div>
 
-          <div className="mt-10 grid gap-5 md:grid-cols-3">
+          <div className="mt-10 grid items-stretch gap-6 md:grid-cols-3">
             <InfoCard icon={<Lightbulb />} title="Explore ideias" text="Encontre inspiração e dê o primeiro passo para tirar seu projeto do papel." />
             <InfoCard icon={<Wrench />} title="Use recursos" text="Tenha acesso a máquinas, materiais e ferramentas para experimentar com liberdade." />
             <InfoCard icon={<Users />} title="Crie junto" text="Faça parte de uma comunidade que aprende, constrói e cresce em colaboração." />
@@ -98,7 +98,7 @@ export default function HomePage() {
 
 function InfoCard({ icon, title, text }: InfoCardProps) {
   return (
-    <article className="border-t-4 border-[#050b33] bg-[#f5f7fb] p-6">
+    <article className="flex h-full flex-col border-t-4 border-[#050b33] bg-[#f5f7fb] p-6 sm:p-7">
       <div className="flex h-11 w-11 items-center justify-center bg-white text-[#7000ff] shadow-sm">
         {icon}
       </div>
