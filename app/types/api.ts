@@ -32,6 +32,23 @@ export interface User {
   updatedAt: string;
 }
 
+export interface MaterialAPI {
+  id: number;
+  name: string;
+  description: string;
+  quantity: number;
+  unit: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MaterialPayload {
+  name: string;
+  description: string;
+  quantity: number;
+  unit: string;
+}
+
 export type MachineStatusAPI = 'FUNCTIONAL' | 'AVAILABLE' | 'MAINTENANCE' | 'UNUSABLE';
 
 export interface MachineAPI {

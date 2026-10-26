@@ -3,6 +3,8 @@ import type {
   CreateUserRequest,
   LoginRequest,
   LoginResponse,
+  MaterialAPI,
+  MaterialPayload,
   MachineAPI,
   MachinePayload,
   SchedulingRequestAPI,
@@ -48,6 +50,16 @@ export async function getUsers(): Promise<User[]> {
 
 export async function promoteUserToAdmin(id: number): Promise<User> {
   const response = await api.patch<User>(`/users/${id}/promote-to-admin`);
+  return response.data;
+}
+
+export async function getMaterials(): Promise<MaterialAPI[]> {
+  const response = await api.get<MaterialAPI[]>('/materials');
+  return response.data;
+}
+
+export async function createMaterial(payload: MaterialPayload): Promise<MaterialAPI> {
+  const response = await api.post<MaterialAPI>('/materials', payload);
   return response.data;
 }
 

@@ -18,6 +18,14 @@ a API em <http://localhost:8081/api>. Se necessário, defina
 variável `NEXT_PUBLIC_`, o valor é incluído no bundle durante a compilação da
 imagem.
 
+## Materiais do laboratório
+
+A página <http://localhost:3000/materiais> mostra o estoque cadastrado.
+Administradores podem cadastrar materiais com quantidade e unidade pela seção
+**Materiais** do painel administrativo. A API permite consultar
+`GET /api/materials` publicamente; `POST /api/materials` exige uma sessão de
+administrador.
+
 Para entrar com as contas de demonstração criadas pelo backend:
 
 | Perfil | E-mail | Senha |

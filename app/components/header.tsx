@@ -210,6 +210,7 @@ export default function Header({ authenticated, userName, userId }: HeaderProps)
                 <span>Agendamento ADM</span>
               </Link>
               <Link href="/Maquinas-ADM" onClick={() => setMobileMenuOpen(false)} className="px-3 py-2 rounded-lg font-semibold text-sm text-white/90 hover:bg-white/5">Máquinas ADM</Link>
+              <Link href="/Materiais-ADM" onClick={() => setMobileMenuOpen(false)} className="px-3 py-2 rounded-lg font-semibold text-sm text-white/90 hover:bg-white/5">Materiais ADM</Link>
               <Link href="/Relatorio-ADM" onClick={() => setMobileMenuOpen(false)} className="px-3 py-2 rounded-lg font-semibold text-sm text-white/90 hover:bg-white/5">Relatórios ADM</Link>
               <Link href="/usuarios" onClick={() => setMobileMenuOpen(false)} className="px-3 py-2 rounded-lg font-semibold text-sm text-white/90 hover:bg-white/5">Controle de usuários</Link>
             </>
