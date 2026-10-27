@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState, useSyncExternalStore } from 'react';
+import React, { useEffect, useState, useSyncExternalStore } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { LogIn, LogOut, User, UserPlus, Menu, X } from 'lucide-react';
+import { getUserThemePreference, subscribeToTheme } from '@/app/lib/theme';
 
 interface HeaderProps {
   authenticated?: boolean;
@@ -48,12 +49,21 @@ export default function Header({ authenticated, userName, userId }: HeaderProps)
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
   const displayName = userName ?? storedUserName;
   const currentUserId = userId ?? storedUserId;
+  const theme = useSyncExternalStore(
+    subscribeToTheme,
+    () => getUserThemePreference(currentUserId),
+    () => 'light',
+  );
   const isAuth = authenticated ?? Boolean(storedToken || displayName);
 
   // Verificadores de rota para realce visual
   const isInicio = pathname === '/';
   const isAgendamento = pathname === '/Agendamento-ADM';
   const isNormas = pathname === '/normas';
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+  }, [theme]);
 
   function handleLogout() {
     if (typeof window !== 'undefined') {

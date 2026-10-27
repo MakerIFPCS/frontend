@@ -27,7 +27,9 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
     const token = localStorage.getItem('authToken');
-    if (token) config.headers.Authorization = token;
+    const isPublicRequest = config.method?.toLowerCase() === 'post'
+      && (config.url === '/users' || config.url === '/auth/login');
+    if (token && !isPublicRequest) config.headers.Authorization = token;
   }
   return config;
 });

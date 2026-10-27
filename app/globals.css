@@ -3,6 +3,10 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --surface: #ffffff;
+  --surface-muted: #f5f7fb;
+  --border: #e2e6ee;
+  color-scheme: light;
 }
 
 @theme inline {
@@ -12,15 +16,158 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+:root[data-theme="dark"] {
+  --background: #101521;
+  --foreground: #e5e7eb;
+  --surface: #1a2232;
+  --surface-muted: #222c3e;
+  --border: #3a4659;
+  color-scheme: dark;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+:root[data-theme="dark"] [class~="bg-white"],
+:root[data-theme="dark"] [class~="bg-gray-50"],
+:root[data-theme="dark"] [class~="bg-gray-100"],
+:root[data-theme="dark"] [class~="bg-slate-50"],
+:root[data-theme="dark"] [class~="bg-slate-100"],
+:root[data-theme="dark"] [class~="bg-[#ecfdf5]"],
+:root[data-theme="dark"] [class~="bg-[#eef1f7]"],
+:root[data-theme="dark"] [class~="bg-[#eef1ff]"],
+:root[data-theme="dark"] [class~="bg-[#eff6ff]"],
+:root[data-theme="dark"] [class~="bg-[#f0e9ff]"],
+:root[data-theme="dark"] [class~="bg-[#f0eaff]"],
+:root[data-theme="dark"] [class~="bg-[#f1f5f9]"],
+:root[data-theme="dark"] [class~="bg-[#f5f7fb]"],
+:root[data-theme="dark"] [class~="bg-[#f8f9fc]"],
+:root[data-theme="dark"] [class~="bg-[#f8fafc]"],
+:root[data-theme="dark"] [class~="bg-[#fafbfe]"] {
+  background-color: var(--surface) !important;
+}
+
+:root[data-theme="dark"] [class~="bg-gray-100"],
+:root[data-theme="dark"] [class~="bg-slate-100"] {
+  background-color: var(--surface-muted) !important;
+}
+
+:root[data-theme="dark"] [class~="text-black"],
+:root[data-theme="dark"] [class~="text-gray-700"],
+:root[data-theme="dark"] [class~="text-gray-800"],
+:root[data-theme="dark"] [class~="text-gray-900"],
+:root[data-theme="dark"] [class~="text-slate-700"],
+:root[data-theme="dark"] [class~="text-slate-800"],
+:root[data-theme="dark"] [class~="text-slate-900"],
+:root[data-theme="dark"] [class~="text-[#050b33]"],
+:root[data-theme="dark"] [class~="text-[#475569]"],
+:root[data-theme="dark"] [class~="text-[#56617d]"],
+:root[data-theme="dark"] [class~="text-[#68728a]"],
+:root[data-theme="dark"] [class~="text-[#7b8498]"] {
+  color: var(--foreground) !important;
+}
+
+:root[data-theme="dark"] [class~="text-gray-500"],
+:root[data-theme="dark"] [class~="text-gray-600"],
+:root[data-theme="dark"] [class~="text-slate-500"],
+:root[data-theme="dark"] [class~="text-slate-600"] {
+  color: #b7c1d1 !important;
+}
+
+:root[data-theme="dark"] [class~="border-gray-100"],
+:root[data-theme="dark"] [class~="border-gray-200"],
+:root[data-theme="dark"] [class~="border-gray-300"],
+:root[data-theme="dark"] [class~="border-slate-100"],
+:root[data-theme="dark"] [class~="border-slate-200"],
+:root[data-theme="dark"] [class~="border-slate-300"],
+:root[data-theme="dark"] [class~="border-[#a7f3d0]"],
+:root[data-theme="dark"] [class~="border-[#bfdbfe]"],
+:root[data-theme="dark"] [class~="border-[#cbd2df]"],
+:root[data-theme="dark"] [class~="border-[#cbd5e1]"],
+:root[data-theme="dark"] [class~="border-[#dfe4ee]"],
+:root[data-theme="dark"] [class~="border-[#dfe5ef]"],
+:root[data-theme="dark"] [class~="border-[#e0e7ff]"],
+:root[data-theme="dark"] [class~="border-[#e2e6ee]"],
+:root[data-theme="dark"] [class~="border-[#e4e8f0]"],
+:root[data-theme="dark"] [class~="border-[#e9edf4]"],
+:root[data-theme="dark"] [class~="border-[#edf0f5]"] {
+  border-color: var(--border) !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="system"] {
+    --background: #101521;
+    --foreground: #e5e7eb;
+    --surface: #1a2232;
+    --surface-muted: #222c3e;
+    --border: #3a4659;
+    color-scheme: dark;
+  }
+
+  :root[data-theme="system"] [class~="bg-white"],
+  :root[data-theme="system"] [class~="bg-gray-50"],
+  :root[data-theme="system"] [class~="bg-slate-50"],
+  :root[data-theme="system"] [class~="bg-[#ecfdf5]"],
+  :root[data-theme="system"] [class~="bg-[#eef1f7]"],
+  :root[data-theme="system"] [class~="bg-[#eef1ff]"],
+  :root[data-theme="system"] [class~="bg-[#eff6ff]"],
+  :root[data-theme="system"] [class~="bg-[#f0e9ff]"],
+  :root[data-theme="system"] [class~="bg-[#f0eaff]"],
+  :root[data-theme="system"] [class~="bg-[#f1f5f9]"],
+  :root[data-theme="system"] [class~="bg-[#f5f7fb]"],
+  :root[data-theme="system"] [class~="bg-[#f8f9fc]"],
+  :root[data-theme="system"] [class~="bg-[#f8fafc]"],
+  :root[data-theme="system"] [class~="bg-[#fafbfe]"] {
+    background-color: var(--surface) !important;
+  }
+
+  :root[data-theme="system"] [class~="bg-gray-100"],
+  :root[data-theme="system"] [class~="bg-slate-100"] {
+    background-color: var(--surface-muted) !important;
+  }
+
+  :root[data-theme="system"] [class~="text-black"],
+  :root[data-theme="system"] [class~="text-gray-700"],
+  :root[data-theme="system"] [class~="text-gray-800"],
+  :root[data-theme="system"] [class~="text-gray-900"],
+  :root[data-theme="system"] [class~="text-slate-700"],
+  :root[data-theme="system"] [class~="text-slate-800"],
+  :root[data-theme="system"] [class~="text-slate-900"],
+  :root[data-theme="system"] [class~="text-[#050b33]"],
+  :root[data-theme="system"] [class~="text-[#475569]"],
+  :root[data-theme="system"] [class~="text-[#56617d]"],
+  :root[data-theme="system"] [class~="text-[#68728a]"],
+  :root[data-theme="system"] [class~="text-[#7b8498]"] {
+    color: var(--foreground) !important;
+  }
+
+  :root[data-theme="system"] [class~="text-gray-500"],
+  :root[data-theme="system"] [class~="text-gray-600"],
+  :root[data-theme="system"] [class~="text-slate-500"],
+  :root[data-theme="system"] [class~="text-slate-600"] {
+    color: #b7c1d1 !important;
+  }
+
+  :root[data-theme="system"] [class~="border-gray-100"],
+  :root[data-theme="system"] [class~="border-gray-200"],
+  :root[data-theme="system"] [class~="border-gray-300"],
+  :root[data-theme="system"] [class~="border-slate-100"],
+  :root[data-theme="system"] [class~="border-slate-200"],
+  :root[data-theme="system"] [class~="border-slate-300"],
+  :root[data-theme="system"] [class~="border-[#a7f3d0]"],
+  :root[data-theme="system"] [class~="border-[#bfdbfe]"],
+  :root[data-theme="system"] [class~="border-[#cbd2df]"],
+  :root[data-theme="system"] [class~="border-[#cbd5e1]"],
+  :root[data-theme="system"] [class~="border-[#dfe4ee]"],
+  :root[data-theme="system"] [class~="border-[#dfe5ef]"],
+  :root[data-theme="system"] [class~="border-[#e0e7ff]"],
+  :root[data-theme="system"] [class~="border-[#e2e6ee]"],
+  :root[data-theme="system"] [class~="border-[#e4e8f0]"],
+  :root[data-theme="system"] [class~="border-[#e9edf4]"],
+  :root[data-theme="system"] [class~="border-[#edf0f5]"] {
+    border-color: var(--border) !important;
+  }
 }

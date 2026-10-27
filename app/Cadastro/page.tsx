@@ -1,5 +1,6 @@
 'use client';
 
+import axios from 'axios';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -52,8 +53,11 @@ export default function SignupPage() {
       } catch {
         router.push(`/login?registered=1&email=${encodeURIComponent(user.email)}`);
       }
-    } catch {
-      setError('Não foi possível criar sua conta. Confira os dados e tente novamente.');
+    } catch (error: unknown) {
+      const apiMessage = axios.isAxiosError<{ message?: string }>(error)
+        ? error.response?.data?.message
+        : undefined;
+      setError(apiMessage || 'Não foi possível criar sua conta. Confira os dados e tente novamente.');
     } finally {
       setIsSubmitting(false);
     }
