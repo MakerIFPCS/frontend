@@ -1,315 +1,304 @@
 'use client';
 
-import React, { useState } from 'react';
-import Link from 'next/link';
-import {
-  Wrench,
-  Home,
-  Calendar,
-  Users,
-  BarChart3,
-  Settings,
-  LogOut,
-  Menu,
-  PanelLeftClose,
-  PanelLeftOpen,
-  Bell,
-  ShieldCheck,
-  ChevronDown,
-  FileText,
-  Table
-} from 'lucide-react';
-import Header from '@/app/components/header';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { FormEvent } from 'react';
+import axios from 'axios';
+import { Activity, CalendarDays, Download, RefreshCw } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import Header from '@/app/components/header';
+import { getActivityReport } from '@/app/lib/api';
 import { useAdminAccess } from '@/app/lib/use-admin-access';
+import type { ActivityReportAPI, ActivityReportEventAPI } from '@/app/types/api';
 
-export type MachineStatus = 'Em operação' | 'Disponível' | 'Inativo';
-export type MachineType = 'Impressão 3D' | 'Corte a Laser' | 'CNC';
-
-export interface Machine {
-  id: string;
-  code: string;
-  name: string;
-  description: string;
-  type: MachineType;
-  status: MachineStatus;
-  image: string;
+function formatDateTime(value: string) {
+  return new Intl.DateTimeFormat('pt-BR', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  }).format(new Date(value));
 }
 
-const INITIAL_MACHINES: Machine[] = [
-  { id: '1', code: '#M001', name: 'Impressão 3D', description: 'Impressora 3D FDM para prototipagem.', type: 'Impressão 3D', status: 'Em operação', image: '/machines/m1.png' },
-  { id: '2', code: '#M002', name: 'Corte a Laser', description: 'Máquina de corte e gravação a laser.', type: 'Corte a Laser', status: 'Disponível', image: '/machines/m2.png' },
-  { id: '3', code: '#M003', name: 'Creality CR200B', description: 'Impressora 3D de alta precisão.', type: 'Impressão 3D', status: 'Disponível', image: '/machines/m3.png' },
-  { id: '4', code: '#M004', name: 'GTMAX3D Core H5', description: 'Impressora 3D industrial.', type: 'Impressão 3D', status: 'Disponível', image: '/machines/m4.png' },
-  { id: '5', code: '#M005', name: 'Creality Ender 3 Pro', description: 'Impressora versátil.', type: 'Impressão 3D', status: 'Em operação', image: '/machines/m5.png' },
-  { id: '6', code: '#M006', name: 'GTMAX3D Core A3v2', description: 'Impressora de alta performance.', type: 'Impressão 3D', status: 'Disponível', image: '/machines/m6.png' },
-  { id: '7', code: '#M007', name: 'Delta CNC', description: 'Router CNC para usinagem.', type: 'CNC', status: 'Inativo', image: '/machines/m7.png' },
-];
+function getErrorMessage(error: unknown) {
+  if (axios.isAxiosError<{ message?: string }>(error)) {
+    return error.response?.data?.message || error.message;
+  }
+  return error instanceof Error ? error.message : 'Não foi possível carregar o relatório.';
+}
+
+function exportActivityReport(report: ActivityReportAPI) {
+  const document = new jsPDF({ orientation: 'landscape' });
+  const generatedAt = formatDateTime(report.generatedAt);
+  const period = report.fromDate || report.untilDate
+    ? `${report.fromDate ? new Date(report.fromDate).toLocaleDateString('pt-BR') : 'Início'} até ${
+        report.untilDate ? new Date(new Date(report.untilDate).getTime() - 1).toLocaleDateString('pt-BR') : 'Hoje'
+      }`
+    : 'Todo o período';
+
+  document.setProperties({
+    title: 'Relatório de atividades - Lab Maker',
+    subject: `Atividades administrativas: ${period}`,
+    creator: 'Lab Maker',
+  });
+  document.setFontSize(18);
+  document.setTextColor(5, 11, 51);
+  document.text('Relatório de atividades', 14, 18);
+  document.setFontSize(10);
+  document.setTextColor(86, 97, 125);
+  document.text(`Período: ${period}`, 14, 26);
+  document.text(`Gerado em ${generatedAt} · ${report.events.length} atividade(s)`, 14, 32);
+
+  const rows = report.events.map((event) => [
+    formatDateTime(event.occurredAt),
+    event.category,
+    event.action,
+    event.subject,
+    event.actor,
+    event.details || '—',
+  ]);
+  autoTable(document, {
+    startY: 39,
+    head: [['Data e hora', 'Categoria', 'Ação', 'Registro', 'Responsável', 'Detalhes']],
+    body: rows.length ? rows : [['—', '—', 'Nenhuma atividade no período', '—', '—', '—']],
+    styles: { font: 'helvetica', fontSize: 8, cellPadding: 2.5, overflow: 'linebreak' },
+    headStyles: { fillColor: [5, 11, 51], textColor: [255, 255, 255], fontStyle: 'bold' },
+    alternateRowStyles: { fillColor: [245, 247, 251] },
+    columnStyles: {
+      0: { cellWidth: 29 },
+      1: { cellWidth: 25 },
+      2: { cellWidth: 38 },
+      3: { cellWidth: 39 },
+      4: { cellWidth: 35 },
+    },
+    margin: { left: 14, right: 14, bottom: 14 },
+    didDrawPage: ({ pageNumber }) => {
+      const pageHeight = document.internal.pageSize.getHeight();
+      document.setFontSize(8);
+      document.setTextColor(120, 120, 120);
+      document.text(`Lab Maker · Página ${pageNumber}`, 14, pageHeight - 7);
+    },
+  });
+
+  const filenamePeriod = period.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '');
+  document.save(`LabMaker-Relatorio-${filenamePeriod || 'atividades'}.pdf`);
+}
 
 export default function RelatoriosPage() {
   const authorized = useAdminAccess();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+  const [report, setReport] = useState<ActivityReportAPI | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const handleExportPDF = () => {
-    const doc = new jsPDF();
-    
-    // Captura a data e hora atual do sistema
-    const dataAtual = new Date().toLocaleDateString('pt-BR');
-    const horaAtual = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  const loadReport = useCallback(async (from?: string, to?: string) => {
+    setLoading(true);
+    setError('');
+    try {
+      setReport(await getActivityReport(from || undefined, to || undefined));
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+      setReport(null);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-    // Carrega a logo da pasta public
-    const logo = new window.Image();
-    logo.src = '/labmaker.png';
-    
-    logo.onload = () => {
-      // 1. Cabeçalho (Logo)
-      doc.addImage(logo, 'PNG', 14, 12, 45, 13);
-      
-      // 2. Título Principal
-      doc.setFontSize(20);
-      doc.setTextColor(5, 11, 51); // #050b33
-      doc.text('Relatório de Status das Máquinas', 14, 38);
-      
-      // 3. Subtítulo com Data e Hora
-      doc.setFontSize(10);
-      doc.setTextColor(86, 97, 125); // #56617d
-      doc.text(`Documento gerado em ${dataAtual} às ${horaAtual}`, 14, 45);
-
-      // 4. Configuração dos Dados
-      const tableColumn = ["CÓDIGO", "MÁQUINA", "TIPO", "STATUS"];
-      const tableRows = INITIAL_MACHINES.map(machine => [
-        machine.code,
-        machine.name,
-        machine.type,
-        machine.status
-      ]);
-
-      // 5. Geração da Tabela com Design Personalizado
-      autoTable(doc, {
-        startY: 52,
-        head: [tableColumn],
-        body: tableRows,
-        styles: { 
-          font: 'helvetica', 
-          fontSize: 10, 
-          cellPadding: 5,
-          lineColor: [223, 228, 238], // #dfe4ee
-          lineWidth: 0.1
-        },
-        headStyles: { 
-          fillColor: [5, 11, 51], 
-          textColor: [255, 255, 255], 
-          fontStyle: 'bold' 
-        },
-        alternateRowStyles: { 
-          fillColor: [245, 247, 251] // #f5f7fb
-        },
-        // 6. Rodapé Dinâmico em todas as páginas
-        didDrawPage: function (data) {
-          const str = 'Página ' + doc.getCurrentPageInfo().pageNumber;
-          doc.setFontSize(8);
-          doc.setTextColor(150, 150, 150);
-          
-          const pageSize = doc.internal.pageSize;
-          const pageHeight = pageSize.height ? pageSize.height : pageSize.getHeight();
-          doc.text(str, data.settings.margin.left, pageHeight - 10);
-          doc.text('Lab Maker - Laboratório de Fabricação Digital PUC Minas', 120, pageHeight - 10);
-        }
+  useEffect(() => {
+    if (!authorized) return;
+    let active = true;
+    getActivityReport()
+      .then((data) => {
+        if (active) setReport(data);
+      })
+      .catch((requestError: unknown) => {
+        if (active) setError(getErrorMessage(requestError));
+      })
+      .finally(() => {
+        if (active) setLoading(false);
       });
-
-      // Baixa o arquivo com nome dinâmico
-      doc.save(`LabMaker_Relatorio_${dataAtual.replace(/\//g, '-')}.pdf`);
+    return () => {
+      active = false;
     };
+  }, [authorized]);
 
-    // Fallback caso a imagem não carregue
-    logo.onerror = () => {
-      console.error('Erro ao carregar a logo. Verifique se /labmaker.png existe na pasta public.');
-    };
-  };
+  const categoryCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const event of report?.events ?? []) {
+      counts.set(event.category, (counts.get(event.category) ?? 0) + 1);
+    }
+    return [...counts.entries()].sort(([first], [second]) => first.localeCompare(second, 'pt-BR'));
+  }, [report]);
 
-  const handleExportCSV = () => {
-    const headers = ['Código', 'Máquina', 'Descrição', 'Tipo', 'Status'];
-    
-    const rows = INITIAL_MACHINES.map(m => [
-      `"${m.code}"`, 
-      `"${m.name}"`, 
-      `"${m.description}"`, 
-      `"${m.type}"`, 
-      `"${m.status}"`
-    ]);
-    
-    const csvContent = [
-      headers.join(','), 
-      ...rows.map(r => r.join(','))
-    ].join('\n');
-    
-    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', 'LabMaker_Relatorio_Maquinas.csv');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+  function handleFilter(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    void loadReport(fromDate, toDate);
+  }
 
   if (!authorized) return <main className="p-10 text-center">Verificando acesso...</main>;
 
   return (
-    <div className="min-h-screen bg-[#f5f7fb] text-[#050b33] flex flex-col font-sans selection:bg-[#7000ff]/20 selection:text-[#050b33]">
+    <div className="min-h-screen bg-[#f5f7fb] text-[#050b33]">
       <Header authenticated />
-
-      <div className="bg-[#030722] border-b border-white/10 px-4 sm:px-8 py-2.5 text-xs text-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
-          <div className="flex items-center gap-2.5 flex-wrap">
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              title={sidebarOpen ? 'Recolher menu lateral' : 'Expandir menu lateral'}
-              className="hidden lg:inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
-            >
-              {sidebarOpen ? <PanelLeftClose className="w-4 h-4" /> : <PanelLeftOpen className="w-4 h-4" />}
-              <span className="text-[11px] font-medium">{sidebarOpen ? 'Recolher' : 'Menu'}</span>
-            </button>
-
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
-            >
-              <Menu className="w-4 h-4" />
-              <span className="text-[11px] font-medium">Menu</span>
-            </button>
-
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#7000ff]/30 px-3 py-0.5 text-[11px] font-bold tracking-wider uppercase text-[#00ff9d] border border-[#7000ff]/50">
-              <ShieldCheck className="w-3.5 h-3.5 text-[#00ff9d]" /> Painel Administrativo
-            </span>
-            <span className="hidden sm:inline text-white/30">/</span>
-            <span className="hidden sm:inline text-white/80 font-medium">Laboratório de Fabricação Digital</span>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <button
-              type="button"
-              title="Notificações"
-              className="relative p-1 text-white/70 hover:text-white transition-colors"
-            >
-              <Bell className="w-4 h-4" />
-              <span className="absolute top-0 right-0 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#ff2a55] text-[9px] font-extrabold text-white">
-                1
-              </span>
-            </button>
-
-            <div className="flex items-center gap-2 pl-2 border-l border-white/15">
-              <div className="w-7 h-7 rounded-full bg-[#7000ff] flex items-center justify-center font-bold text-white text-xs shadow-inner">
-                M
-              </div>
-              <div className="hidden sm:block text-left leading-tight">
-                <p className="font-semibold text-white text-xs">Monitor</p>
-                <p className="text-[10px] text-white/60">Administrador</p>
-              </div>
-              <ChevronDown className="w-3.5 h-3.5 text-white/50" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex-1 flex overflow-hidden">
-        <aside
-          className={`bg-[#050b33] text-white shrink-0 border-r border-white/10 transition-all duration-300 relative flex flex-col justify-between ${
-            sidebarOpen ? 'w-60' : 'w-16'
-          } ${mobileMenuOpen ? 'fixed inset-y-0 left-0 z-50 w-64 shadow-2xl flex' : 'hidden lg:flex'}`}
-        >
-          <div className="absolute bottom-16 -left-10 w-44 h-44 opacity-5 pointer-events-none text-white">
-            <svg viewBox="0 0 100 100" fill="currentColor">
-              <path d="M50 35a15 15 0 1 0 0 30 15 15 0 0 0 0-30zm0-25c-2.3 0-4.3 1.5-4.8 3.8l-1.3 5.4c-2.4.7-4.7 1.8-6.7 3.1l-5-2.6c-2.1-1.1-4.7-.6-6.2 1.2l-5.7 7c-1.5 1.8-1.5 4.4-.1 6.3l3.3 4.6c-1.2 2.1-2.1 4.4-2.7 6.9l-5.5 1.1C13.2 47.3 11.5 49.3 11.5 51.6v9c0 2.3 1.7 4.3 3.9 4.8l5.5 1.1c.6 2.5 1.5 4.8 2.7 6.9l-3.3 4.6c-1.4 1.9-1.4 4.5-.1 6.3l-5.7-7c-1.5-1.8-4.1-2.3-6.2-1.2l-5 2.6c-2-1.3-4.3-2.4-6.7-3.1l-1.3-5.4C58.3 11.5 56.3 10 54 10h-4z" />
-            </svg>
-          </div>
-
-          <div className="p-3.5 space-y-1 relative z-10">
-            {mobileMenuOpen && (
-              <div className="flex items-center justify-between pb-3 mb-2 border-b border-white/10 lg:hidden">
-                <span className="font-bold text-sm tracking-wide text-[#00ff9d]">NAVEGAÇÃO ADM</span>
-                <button
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="p-1 rounded text-white/70 hover:text-white"
-                >
-                  ✕
-                </button>
-              </div>
-            )}
-
-            <SidebarItem icon={<Home className="w-5 h-5" />} label="Início" href="/admin" collapsed={!sidebarOpen} />
-            <SidebarItem icon={<Wrench className="w-5 h-5" />} label="Máquinas" href="/Maquinas-ADM" collapsed={!sidebarOpen} />
-            <SidebarItem icon={<Calendar className="w-5 h-5" />} label="Agendamentos" href="/Agendamento-ADM" collapsed={!sidebarOpen} />
-            <SidebarItem icon={<Users className="w-5 h-5" />} label="Usuários" href="#usuarios" collapsed={!sidebarOpen} />
-            <SidebarItem icon={<BarChart3 className="w-5 h-5" />} label="Relatórios" href="/Relatorio-ADM" active collapsed={!sidebarOpen} />
-            <SidebarItem icon={<Settings className="w-5 h-5" />} label="Configurações" href="#configuracoes" collapsed={!sidebarOpen} />
-          </div>
-
-          <div className="p-3.5 border-t border-white/10 relative z-10 bg-[#050b33]">
-            <SidebarItem icon={<LogOut className="w-5 h-5" />} label="Sair" href="/login" collapsed={!sidebarOpen} />
-          </div>
-        </aside>
-
-        <main className="flex-1 overflow-y-auto px-4 sm:px-8 lg:px-10 py-7 max-w-7xl mx-auto w-full flex flex-col items-center justify-center">
-          <div className="bg-white p-8 sm:p-10 rounded-2xl border border-[#dfe4ee] shadow-sm max-w-md w-full text-center">
-            <h1 className="text-2xl font-extrabold text-[#050b33] mb-2 tracking-tight">
-              Relatório de Máquinas
-            </h1>
-            <p className="text-sm text-[#56617d] mb-8 font-medium">
-              Escolha o formato desejado para exportar os dados do laboratório.
+      <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="mb-2 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-[#7000ff]">
+              <Activity className="h-4 w-4" /> Administração
             </p>
-
-            <div className="flex flex-col gap-4">
-              <button
-                onClick={handleExportPDF}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#050b33] px-5 py-4 text-sm font-extrabold text-white transition-all hover:bg-[#101d5e] hover:-translate-y-0.5"
-              >
-                <FileText className="w-5 h-5" />
-                GERAR RELATÓRIO PDF
-              </button>
-
-              <button
-                onClick={handleExportCSV}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#10b981] px-5 py-4 text-sm font-extrabold text-white shadow-sm shadow-emerald-500/20 transition-all hover:bg-[#059669] hover:-translate-y-0.5"
-              >
-                <Table className="w-5 h-5" />
-                GERAR RELATÓRIO CSV
-              </button>
-            </div>
+            <h1 className="text-3xl font-extrabold tracking-tight">Relatório de atividades</h1>
+            <p className="mt-2 max-w-2xl text-sm text-[#56617d]">
+              Consulte cadastros, alterações, acessos e solicitações registradas no sistema.
+            </p>
           </div>
-        </main>
-      </div>
+          <button
+            type="button"
+            onClick={() => report && exportActivityReport(report)}
+            disabled={!report || loading}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#050b33] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#101d5e] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Download className="h-4 w-4" /> Exportar PDF
+          </button>
+        </div>
+
+        <form
+          onSubmit={handleFilter}
+          className="mb-6 grid gap-4 rounded-2xl border border-[#dfe4ee] bg-white p-5 shadow-sm sm:grid-cols-[1fr_1fr_auto_auto] sm:items-end"
+        >
+          <label className="block text-sm font-semibold">
+            <span className="mb-2 flex items-center gap-2 text-[#56617d]">
+              <CalendarDays className="h-4 w-4" /> Data inicial
+            </span>
+            <input
+              type="date"
+              value={fromDate}
+              max={toDate || undefined}
+              onChange={(event) => setFromDate(event.target.value)}
+              className="w-full rounded-lg border border-[#dfe4ee] px-3 py-2.5 outline-none focus:border-[#7000ff]"
+            />
+          </label>
+          <label className="block text-sm font-semibold">
+            <span className="mb-2 flex items-center gap-2 text-[#56617d]">
+              <CalendarDays className="h-4 w-4" /> Data final
+            </span>
+            <input
+              type="date"
+              value={toDate}
+              min={fromDate || undefined}
+              onChange={(event) => setToDate(event.target.value)}
+              className="w-full rounded-lg border border-[#dfe4ee] px-3 py-2.5 outline-none focus:border-[#7000ff]"
+            />
+          </label>
+          <button
+            type="submit"
+            disabled={loading}
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#7000ff] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#5d00d6] disabled:opacity-50"
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /> Filtrar
+          </button>
+          <button
+            type="button"
+            disabled={loading || (!fromDate && !toDate)}
+            onClick={() => {
+              setFromDate('');
+              setToDate('');
+              void loadReport();
+            }}
+            className="rounded-lg border border-[#dfe4ee] px-4 py-2.5 text-sm font-bold text-[#56617d] hover:bg-[#f5f7fb] disabled:opacity-50"
+          >
+            Limpar
+          </button>
+        </form>
+
+        {error && (
+          <div role="alert" className="mb-6 flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 sm:flex-row sm:items-center sm:justify-between">
+            <p>Não foi possível carregar o relatório: {error}</p>
+            <button type="button" onClick={() => void loadReport(fromDate, toDate)} className="font-bold underline">
+              Tentar novamente
+            </button>
+          </div>
+        )}
+
+        <section aria-label="Resumo das atividades" className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <SummaryCard label="Atividades no período" value={report?.events.length ?? 0} />
+          {categoryCounts.slice(0, 3).map(([category, count]) => (
+            <SummaryCard key={category} label={category} value={count} />
+          ))}
+          {!loading && categoryCounts.length === 0 && (
+            <SummaryCard label="Categorias registradas" value={0} />
+          )}
+        </section>
+
+        <section className="overflow-hidden rounded-2xl border border-[#dfe4ee] bg-white shadow-sm">
+          <div className="flex items-center justify-between border-b border-[#e9edf4] px-5 py-4">
+            <div>
+              <h2 className="font-bold">Movimentações</h2>
+              <p className="mt-1 text-xs text-[#56617d]">
+                {report ? `${report.events.length} registro(s)` : 'Aguardando dados'}
+                {report?.generatedAt ? ` · Atualizado em ${formatDateTime(report.generatedAt)}` : ''}
+              </p>
+            </div>
+            {loading && <span className="text-sm text-[#56617d]">Carregando...</span>}
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[900px] text-left text-sm">
+              <thead className="bg-[#f8f9fc] text-xs uppercase tracking-wide text-[#56617d]">
+                <tr>
+                  <th className="px-5 py-3 font-bold">Data e hora</th>
+                  <th className="px-5 py-3 font-bold">Categoria / ação</th>
+                  <th className="px-5 py-3 font-bold">Registro</th>
+                  <th className="px-5 py-3 font-bold">Responsável</th>
+                  <th className="px-5 py-3 font-bold">Detalhes</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#e9edf4]">
+                {report?.events.map((event, index) => (
+                  <ActivityRow key={`${event.occurredAt}-${index}`} event={event} />
+                ))}
+                {!loading && !error && report?.events.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="px-5 py-12 text-center text-[#56617d]">
+                      Nenhuma movimentação encontrada para o período selecionado.
+                    </td>
+                  </tr>
+                )}
+                {loading && !report && (
+                  <tr>
+                    <td colSpan={5} className="px-5 py-12 text-center text-[#56617d]">
+                      Buscando movimentações...
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
     </div>
   );
 }
 
-function SidebarItem({
-  icon,
-  label,
-  href,
-  active = false,
-  collapsed = false,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  href: string;
-  active?: boolean;
-  collapsed?: boolean;
-}) {
+function SummaryCard({ label, value }: { label: string; value: number }) {
   return (
-    <Link
-      href={href}
-      title={collapsed ? label : undefined}
-      className={`flex items-center gap-3.5 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-        active
-          ? 'bg-[#101b4c] text-[#f59e0b] shadow-inner'
-          : 'text-white/70 hover:bg-white/10 hover:text-white'
-      } ${collapsed ? 'justify-center' : ''}`}
-    >
-      <span className={active ? 'text-[#f59e0b]' : 'text-white/70'}>{icon}</span>
-      {!collapsed && <span>{label}</span>}
-    </Link>
+    <div className="rounded-xl border border-[#dfe4ee] bg-white p-4 shadow-sm">
+      <p className="text-xs font-bold uppercase tracking-wide text-[#56617d]">{label}</p>
+      <p className="mt-2 text-2xl font-extrabold">{value}</p>
+    </div>
+  );
+}
+
+function ActivityRow({ event }: { event: ActivityReportEventAPI }) {
+  return (
+    <tr className="align-top hover:bg-[#fafbfe]">
+      <td className="whitespace-nowrap px-5 py-4 text-[#56617d]">{formatDateTime(event.occurredAt)}</td>
+      <td className="px-5 py-4">
+        <span className="mb-1 inline-flex rounded-full bg-[#f0e9ff] px-2.5 py-1 text-xs font-bold text-[#5d00d6]">
+          {event.category}
+        </span>
+        <p className="font-semibold">{event.action}</p>
+      </td>
+      <td className="px-5 py-4 font-medium">{event.subject}</td>
+      <td className="px-5 py-4">{event.actor}</td>
+      <td className="max-w-md whitespace-normal px-5 py-4 text-[#56617d]">{event.details || '—'}</td>
+    </tr>
   );
 }

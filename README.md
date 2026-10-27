@@ -22,9 +22,26 @@ imagem.
 
 A página <http://localhost:3000/materiais> mostra o estoque cadastrado.
 Administradores podem cadastrar materiais com quantidade e unidade pela seção
-**Materiais** do painel administrativo. A API permite consultar
+**Materiais** do painel administrativo; também é possível editar o cadastro
+existente por essa página. A API permite consultar
 `GET /api/materials` publicamente; `POST /api/materials` exige uma sessão de
 administrador.
+
+## Empréstimos
+
+Usuários autenticados podem selecionar várias máquinas e materiais, solicitar
+datas de retirada e devolução e acompanhar o status em
+<http://localhost:3000/emprestimos>. A administração analisa os pedidos na
+seção **Empréstimos** do painel. Materiais são descontados do estoque somente
+quando um pedido é aprovado; uma máquina não pode ter pedidos aprovados com
+períodos sobrepostos.
+
+## Relatórios administrativos
+
+A página **Relatórios** consulta atividades reais pela API, permite filtrar
+por data e exportar o resultado exibido em PDF. O endpoint e as limitações do
+histórico anterior à auditoria estão descritos no
+[`backend/README.md`](../backend/README.md#relatório-de-atividades).
 
 Para entrar com as contas de demonstração criadas pelo backend:
 

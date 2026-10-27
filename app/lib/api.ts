@@ -7,8 +7,12 @@ import type {
   MaterialPayload,
   MachineAPI,
   MachinePayload,
+  CreateLoanRequestPayload,
+  ActivityReportAPI,
+  LoanRequestAPI,
   SchedulingRequestAPI,
   SchedulingRequestPayload,
+  UpdateLoanRequestStatusPayload,
   User,
 } from '@/app/types/api';
 
@@ -63,6 +67,11 @@ export async function createMaterial(payload: MaterialPayload): Promise<Material
   return response.data;
 }
 
+export async function updateMaterial(id: number, payload: MaterialPayload): Promise<MaterialAPI> {
+  const response = await api.put<MaterialAPI>(`/materials/${id}`, payload);
+  return response.data;
+}
+
 export async function getMachines(): Promise<MachineAPI[]> {
   const response = await api.get<MachineAPI[]>('/machines');
   return response.data;
@@ -102,4 +111,37 @@ export async function updateSchedulingRequest(
 
 export async function deleteSchedulingRequest(id: string): Promise<void> {
   await api.delete(`/agendamentos/${id}`);
+}
+
+export async function createLoanRequest(payload: CreateLoanRequestPayload): Promise<LoanRequestAPI> {
+  const response = await api.post<LoanRequestAPI>('/loans', payload);
+  return response.data;
+}
+
+export async function getMyLoanRequests(): Promise<LoanRequestAPI[]> {
+  const response = await api.get<LoanRequestAPI[]>('/loans/mine');
+  return response.data;
+}
+
+export async function getLoanRequests(): Promise<LoanRequestAPI[]> {
+  const response = await api.get<LoanRequestAPI[]>('/loans');
+  return response.data;
+}
+
+export async function updateLoanRequestStatus(
+  id: number,
+  payload: UpdateLoanRequestStatusPayload,
+): Promise<LoanRequestAPI> {
+  const response = await api.patch<LoanRequestAPI>(`/loans/${id}/status`, payload);
+  return response.data;
+}
+
+export async function getActivityReport(from?: string, to?: string): Promise<ActivityReportAPI> {
+  const response = await api.get<ActivityReportAPI>('/reports/activity', {
+    params: {
+      ...(from ? { from } : {}),
+      ...(to ? { to } : {}),
+    },
+  });
+  return response.data;
 }

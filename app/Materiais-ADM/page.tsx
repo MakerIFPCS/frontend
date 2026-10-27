@@ -1,23 +1,29 @@
 'use client';
 
+import { isAxiosError } from 'axios';
 import { useEffect, useState } from 'react';
-import { Boxes, PackagePlus } from 'lucide-react';
+import { Boxes, PackagePlus, Pencil, X } from 'lucide-react';
 import Header from '@/app/components/header';
-import { createMaterial, getMaterials } from '@/app/lib/api';
+import { createMaterial, getMaterials, updateMaterial } from '@/app/lib/api';
 import { useAdminAccess } from '@/app/lib/use-admin-access';
 import type { MaterialAPI, MaterialPayload } from '@/app/types/api';
 
-const EMPTY_FORM: MaterialPayload = {
+type MaterialFormState = Omit<MaterialPayload, 'quantity'> & {
+  quantity: string;
+};
+
+const EMPTY_FORM: MaterialFormState = {
   name: '',
   description: '',
-  quantity: 0,
+  quantity: '',
   unit: 'unidades',
 };
 
 export default function MaterialsAdminPage() {
   const authorized = useAdminAccess();
   const [materials, setMaterials] = useState<MaterialAPI[]>([]);
-  const [form, setForm] = useState<MaterialPayload>(EMPTY_FORM);
+  const [form, setForm] = useState<MaterialFormState>(EMPTY_FORM);
+  const [editingMaterialId, setEditingMaterialId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -35,20 +41,46 @@ export default function MaterialsAdminPage() {
     event.preventDefault();
     setError('');
     setNotice('');
+
+    const quantity = Number(form.quantity);
+    if (form.quantity.trim() === '' || !Number.isInteger(quantity) || quantity < 0) {
+      setError('Informe uma quantidade inteira igual ou maior que zero.');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      const material = await createMaterial({
+      const payload: MaterialPayload = {
         ...form,
         name: form.name.trim(),
         description: form.description.trim(),
+        quantity,
         unit: form.unit.trim(),
+      };
+      const material = editingMaterialId === null
+        ? await createMaterial(payload)
+        : await updateMaterial(editingMaterialId, payload);
+      setMaterials((current) => {
+        const updated = editingMaterialId === null
+          ? [...current, material]
+          : current.map((item) => item.id === material.id ? material : item);
+        return updated.sort((a, b) => a.name.localeCompare(b.name));
       });
-      setMaterials((current) => [...current, material].sort((a, b) => a.name.localeCompare(b.name)));
       setForm(EMPTY_FORM);
-      setNotice(`${material.name} cadastrado com sucesso.`);
-    } catch {
-      setError('Não foi possível cadastrar o material. Confira os dados e tente novamente.');
+      setNotice(editingMaterialId === null
+        ? `${material.name} cadastrado com sucesso.`
+        : `${material.name} atualizado com sucesso.`);
+      setEditingMaterialId(null);
+    } catch (error) {
+      const apiMessage = isAxiosError<{ message?: unknown }>(error)
+        ? error.response?.data?.message
+        : undefined;
+      setError(
+        typeof apiMessage === 'string'
+          ? apiMessage
+          : 'Não foi possível cadastrar o material. Confira os dados e tente novamente.',
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -74,7 +106,9 @@ export default function MaterialsAdminPage() {
           <section className="rounded-xl border border-[#dfe4ee] bg-white p-6 shadow-sm">
             <div className="mb-6 flex items-center gap-3">
               <PackagePlus className="h-6 w-6 text-[#7000ff]" />
-              <h2 className="text-xl font-bold">Cadastrar material</h2>
+              <h2 className="text-xl font-bold">
+                {editingMaterialId === null ? 'Cadastrar material' : 'Editar material'}
+              </h2>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
@@ -104,14 +138,17 @@ export default function MaterialsAdminPage() {
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="block text-sm font-semibold">
-                  Quantidade inicial
+                  {editingMaterialId === null ? 'Quantidade inicial' : 'Quantidade'}
                   <input
                     required
                     type="number"
                     min="0"
                     step="1"
                     value={form.quantity}
-                    onChange={(event) => setForm((current) => ({ ...current, quantity: event.target.valueAsNumber }))}
+                    onChange={(event) => setForm((current) => ({
+                      ...current,
+                      quantity: event.target.value,
+                    }))}
                     className="mt-2 w-full rounded-lg border border-[#cbd2df] px-4 py-3 font-normal outline-none focus:border-[#7000ff] focus:ring-2 focus:ring-[#7000ff]/20"
                   />
                 </label>
@@ -134,11 +171,33 @@ export default function MaterialsAdminPage() {
 
               <button
                 type="submit"
-                disabled={isSubmitting || !Number.isInteger(form.quantity) || form.quantity < 0}
+                disabled={
+                  isSubmitting
+                  || form.quantity.trim() === ''
+                  || !Number.isInteger(Number(form.quantity))
+                  || Number(form.quantity) < 0
+                }
                 className="w-full rounded-lg bg-[#050b33] px-5 py-3 font-bold text-white transition-colors hover:bg-[#101d5e] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {isSubmitting ? 'CADASTRANDO...' : 'CADASTRAR MATERIAL'}
+                {isSubmitting
+                  ? editingMaterialId === null ? 'CADASTRANDO...' : 'SALVANDO...'
+                  : editingMaterialId === null ? 'CADASTRAR MATERIAL' : 'SALVAR ALTERAÇÕES'}
               </button>
+              {editingMaterialId !== null && (
+                <button
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={() => {
+                    setEditingMaterialId(null);
+                    setForm(EMPTY_FORM);
+                    setError('');
+                    setNotice('');
+                  }}
+                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-[#cbd2df] px-5 py-3 font-semibold text-[#56617d] hover:bg-[#f5f7fb] disabled:opacity-60"
+                >
+                  <X className="h-4 w-4" /> Cancelar edição
+                </button>
+              )}
             </form>
           </section>
 
@@ -167,7 +226,27 @@ export default function MaterialsAdminPage() {
                         {material.description && <p className="truncate text-sm text-[#68728a]">{material.description}</p>}
                       </div>
                     </div>
-                    <p className="shrink-0 text-sm font-bold">{material.quantity} {material.unit}</p>
+                    <div className="flex shrink-0 items-center gap-3">
+                      <p className="text-sm font-bold">{material.quantity} {material.unit}</p>
+                      <button
+                        type="button"
+                        aria-label={`Editar ${material.name}`}
+                        onClick={() => {
+                          setEditingMaterialId(material.id);
+                          setForm({
+                            name: material.name,
+                            description: material.description ?? '',
+                            quantity: String(material.quantity),
+                            unit: material.unit,
+                          });
+                          setError('');
+                          setNotice('');
+                        }}
+                        className="rounded-lg p-2 text-[#56617d] hover:bg-[#f0eaff] hover:text-[#7000ff]"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                    </div>
                   </li>
                 ))}
               </ul>

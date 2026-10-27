@@ -381,7 +381,7 @@ export default function AgendamentoAdmPage() {
       <Header authenticated />
 
       {/* 2. BARRA DE CONTEXTO ADMINISTRATIVO */}
-      <div className="bg-[#030722] border-b border-white/10 px-4 sm:px-8 py-2.5 text-xs text-white">
+      <div className="hidden">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
           <div className="flex items-center gap-2.5 flex-wrap">
             <button
@@ -439,11 +439,7 @@ export default function AgendamentoAdmPage() {
       {/* 3. CONTEÚDO PRINCIPAL COM SIDEBAR */}
       <div className="flex-1 flex overflow-hidden">
         {/* SIDEBAR ADMINISTRATIVA */}
-        <aside
-          className={`bg-[#050b33] text-white shrink-0 border-r border-white/10 transition-all duration-300 relative flex flex-col justify-between ${
-            sidebarOpen ? 'w-60' : 'w-16'
-          } ${mobileMenuOpen ? 'fixed inset-y-0 left-0 z-50 w-64 shadow-2xl flex' : 'hidden lg:flex'}`}
-        >
+        <aside className="hidden">
           {/* Marca d'água da engrenagem decorativa */}
           <div className="absolute -bottom-10 -left-10 w-44 h-44 opacity-5 pointer-events-none text-white">
             <svg viewBox="0 0 100 100" fill="currentColor">
@@ -520,7 +516,7 @@ export default function AgendamentoAdmPage() {
         </aside>
 
         {/* ÁREA DE CONTEÚDO PRINCIPAL */}
-        <main className="flex-1 overflow-y-auto px-4 sm:px-8 lg:px-10 py-7 max-w-7xl mx-auto w-full">
+        <main className="flex-1 overflow-y-auto px-6 py-12 max-w-6xl mx-auto w-full">
           {/* TOAST FLUTUANTE */}
           {toastMessage && (
             <div

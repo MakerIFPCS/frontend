@@ -100,3 +100,58 @@ export interface SchedulingRequestAPI {
 }
 
 export type SchedulingRequestPayload = Omit<SchedulingRequestAPI, 'id' | 'createdAt'>;
+
+export type LoanResourceType = 'MACHINE' | 'MATERIAL';
+export type LoanRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
+export interface LoanRequestItemPayload {
+  type: LoanResourceType;
+  resourceId: number;
+  quantity: number;
+}
+
+export interface CreateLoanRequestPayload {
+  items: LoanRequestItemPayload[];
+  pickupDate: string;
+  returnDate: string;
+  reason: string;
+}
+
+export interface LoanRequestItemAPI extends LoanRequestItemPayload {
+  name: string;
+}
+
+export interface LoanRequestAPI {
+  id: number;
+  requesterName: string;
+  requesterEmail: string;
+  items: LoanRequestItemAPI[];
+  pickupDate: string;
+  returnDate: string;
+  reason: string;
+  status: LoanRequestStatus;
+  adminNotes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpdateLoanRequestStatusPayload {
+  status: Exclude<LoanRequestStatus, 'PENDING'>;
+  adminNotes?: string;
+}
+
+export interface ActivityReportEventAPI {
+  occurredAt: string;
+  category: string;
+  action: string;
+  subject: string;
+  actor: string;
+  details: string | null;
+}
+
+export interface ActivityReportAPI {
+  generatedAt: string;
+  fromDate: string | null;
+  untilDate: string | null;
+  events: ActivityReportEventAPI[];
+}

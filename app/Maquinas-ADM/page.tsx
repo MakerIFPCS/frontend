@@ -253,7 +253,7 @@ export default function MaquinasAdmPage() {
     <div className="min-h-screen bg-[#f5f7fb] text-[#050b33] flex flex-col font-sans selection:bg-[#7000ff]/20 selection:text-[#050b33]">
       <Header authenticated />
 
-      <div className="bg-[#030722] border-b border-white/10 px-4 sm:px-8 py-2.5 text-xs text-white">
+      <div className="hidden">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
           <div className="flex items-center gap-2.5 flex-wrap">
             <button
@@ -307,11 +307,7 @@ export default function MaquinasAdmPage() {
       </div>
 
       <div className="flex-1 flex overflow-hidden">
-        <aside
-          className={`bg-[#050b33] text-white shrink-0 border-r border-white/10 transition-all duration-300 relative flex flex-col justify-between ${
-            sidebarOpen ? 'w-60' : 'w-16'
-          } ${mobileMenuOpen ? 'fixed inset-y-0 left-0 z-50 w-64 shadow-2xl flex' : 'hidden lg:flex'}`}
-        >
+        <aside className="hidden">
           <div className="absolute -bottom-10 -left-10 w-44 h-44 opacity-5 pointer-events-none text-white">
             <svg viewBox="0 0 100 100" fill="currentColor">
               <path d="M50 35a15 15 0 1 0 0 30 15 15 0 0 0 0-30zm0-25c-2.3 0-4.3 1.5-4.8 3.8l-1.3 5.4c-2.4.7-4.7 1.8-6.7 3.1l-5-2.6c-2.1-1.1-4.7-.6-6.2 1.2l-5.7 7c-1.5 1.8-1.5 4.4-.1 6.3l3.3 4.6c-1.2 2.1-2.1 4.4-2.7 6.9l-5.5 1.1C13.2 47.3 11.5 49.3 11.5 51.6v9c0 2.3 1.7 4.3 3.9 4.8l5.5 1.1c.6 2.5 1.5 4.8 2.7 6.9l-3.3 4.6c-1.4 1.9-1.4 4.5-.1 6.3l-5.7-7c-1.5-1.8-4.1-2.3-6.2-1.2l-5 2.6c-2 1.3-4.3-2.4-6.7-3.1l-1.3-5.4C58.3 11.5 56.3 10 54 10h-4z" />
@@ -385,7 +381,7 @@ export default function MaquinasAdmPage() {
           </div>
         </aside>
 
-        <main className="flex-1 overflow-y-auto px-4 sm:px-8 lg:px-10 py-7 max-w-7xl mx-auto w-full">
+        <main className="flex-1 overflow-y-auto px-6 py-12 max-w-6xl mx-auto w-full">
           {toastMessage && (
             <div className="fixed top-20 right-6 z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-lg border bg-emerald-50 text-emerald-900 border-emerald-200 text-sm font-semibold animate-in fade-in slide-in-from-top-4 duration-200">
               <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
