@@ -140,6 +140,37 @@ export interface UpdateLoanRequestStatusPayload {
   adminNotes?: string;
 }
 
+export type ProductionOrderType = 'LASER_CUTTING' | 'THREE_D_PRINTING';
+export type ProductionOrderStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
+export interface ProductionOrderAPI {
+  id: number;
+  requesterName: string;
+  requesterEmail: string;
+  type: ProductionOrderType;
+  machineId: number | null;
+  machineName: string | null;
+  fileName: string;
+  fileSize: number;
+  notes: string;
+  status: ProductionOrderStatus;
+  adminNotes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProductionOrderPayload {
+  type: ProductionOrderType;
+  machineId?: number;
+  notes: string;
+  file: File;
+}
+
+export interface UpdateProductionOrderStatusPayload {
+  status: Exclude<ProductionOrderStatus, 'PENDING'>;
+  adminNotes?: string;
+}
+
 export interface ActivityReportEventAPI {
   occurredAt: string;
   category: string;

@@ -7,6 +7,9 @@ import type {
   MaterialPayload,
   MachineAPI,
   MachinePayload,
+  ProductionOrderAPI,
+  ProductionOrderPayload,
+  UpdateProductionOrderStatusPayload,
   CreateLoanRequestPayload,
   ActivityReportAPI,
   LoanRequestAPI,
@@ -133,6 +136,41 @@ export async function updateLoanRequestStatus(
   payload: UpdateLoanRequestStatusPayload,
 ): Promise<LoanRequestAPI> {
   const response = await api.patch<LoanRequestAPI>(`/loans/${id}/status`, payload);
+  return response.data;
+}
+
+export async function createProductionOrder(payload: ProductionOrderPayload): Promise<ProductionOrderAPI> {
+  const formData = new FormData();
+  formData.append('type', payload.type);
+  if (payload.machineId !== undefined) formData.append('machineId', String(payload.machineId));
+  formData.append('notes', payload.notes);
+  formData.append('file', payload.file);
+  const response = await api.post<ProductionOrderAPI>('/orders', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return response.data;
+}
+
+export async function getMyProductionOrders(): Promise<ProductionOrderAPI[]> {
+  const response = await api.get<ProductionOrderAPI[]>('/orders/mine');
+  return response.data;
+}
+
+export async function getProductionOrders(): Promise<ProductionOrderAPI[]> {
+  const response = await api.get<ProductionOrderAPI[]>('/orders');
+  return response.data;
+}
+
+export async function updateProductionOrderStatus(
+  id: number,
+  payload: UpdateProductionOrderStatusPayload,
+): Promise<ProductionOrderAPI> {
+  const response = await api.patch<ProductionOrderAPI>(`/orders/${id}/status`, payload);
+  return response.data;
+}
+
+export async function downloadProductionOrderFile(id: number): Promise<Blob> {
+  const response = await api.get<Blob>(`/orders/${id}/file`, { responseType: 'blob' });
   return response.data;
 }
 
