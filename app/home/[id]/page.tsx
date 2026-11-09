@@ -1,8 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { useParams } from 'next/navigation';
+import {
+  getUserThemePreference,
+  isThemePreference,
+  setUserThemePreference,
+  subscribeToTheme,
+} from '@/app/lib/theme';
 import { getUser } from '@/app/lib/api';
 import type { User } from '@/app/types/api';
 import Header from '@/app/components/header';
@@ -39,10 +45,12 @@ export default function UserHomePage() {
     );
   }
 
+  const userId = String(user.id);
+
   return (
     <div className="min-h-screen bg-[#f5f7fb] text-[#050b33]">
       {/* HEADER: user.id é convertido explicitamente para String para evitar o erro do TypeScript */}
-      <Header authenticated userName={user.name} userId={String(user.id)} />
+      <Header authenticated userName={user.name} userId={userId} />
 
       <section className="mx-auto max-w-5xl px-6 py-12">
         <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#56617d]">Área do usuário</p>
@@ -59,8 +67,45 @@ export default function UserHomePage() {
           <Info label="Data de nascimento" value={user.birthDate ?? 'Não informado'} />
           <Info label="Cadastro criado em" value={new Date(user.createdAt).toLocaleString('pt-BR')} />
         </div>
+
+        <ThemeSettings userId={userId} />
       </section>
     </div>
+  );
+}
+
+function ThemeSettings({ userId }: { userId: string }) {
+  const theme = useSyncExternalStore(
+    subscribeToTheme,
+    () => getUserThemePreference(userId),
+    () => 'light',
+  );
+
+  function handleThemeChange(value: string) {
+    if (isThemePreference(value)) {
+      setUserThemePreference(userId, value);
+    }
+  }
+
+  return (
+    <section className="mt-8 rounded-lg border border-[#dfe4ee] bg-white p-5 shadow-sm">
+      <label htmlFor="theme-preference" className="block text-lg font-semibold">
+        Tema da interface
+      </label>
+      <p className="mt-1 text-sm text-[#56617d]">
+        Escolha como deseja visualizar o sistema. Sua preferência ficará salva neste navegador para este usuário.
+      </p>
+      <select
+        id="theme-preference"
+        value={theme}
+        onChange={(event) => handleThemeChange(event.target.value)}
+        className="mt-4 w-full max-w-xs rounded-lg border border-[#dfe4ee] bg-white px-3 py-2 text-sm text-[#050b33] outline-none focus-visible:ring-2 focus-visible:ring-[#7000ff]"
+      >
+        <option value="light">Claro (padrão)</option>
+        <option value="dark">Escuro</option>
+        <option value="system">Seguir o sistema</option>
+      </select>
+    </section>
   );
 }
 
