@@ -9,7 +9,7 @@ const adminSections = [
   { href: '/Maquinas-ADM', title: 'Máquinas', description: 'Gerencie os equipamentos e seus estados.', icon: Wrench },
   { href: '/Materiais-ADM', title: 'Materiais', description: 'Cadastre e consulte os materiais do laboratório.', icon: PackagePlus },
   { href: '/Emprestimos-ADM', title: 'Empréstimos', description: 'Analise, aprove ou recuse pedidos de empréstimo.', icon: Handshake },
-  { href: '/Pedidos-ADM', title: 'Pedidos de fabricação', description: 'Analise arquivos para corte a laser e impressão 3D.', icon: Scissors },
+  { href: '/Pedidos-ADM', title: 'Pedidos de fabricação', description: 'Revise pedidos de corte a laser, impressão 3D e CNC.', icon: Scissors },
   { href: '/Relatorio-ADM', title: 'Relatórios', description: 'Acesse os relatórios administrativos.', icon: ChartNoAxesColumn },
   { href: '/Agendamento-ADM', title: 'Agendamentos', description: 'Analise e atualize solicitações de uso.', icon: CalendarDays },
   { href: '/usuarios', title: 'Usuários', description: 'Consulte contas e conceda acesso administrativo.', icon: Users },

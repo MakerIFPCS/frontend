@@ -9,6 +9,7 @@ import type {
   MachinePayload,
   ProductionOrderAPI,
   ProductionOrderPayload,
+  UpdateProductionOrderPayload,
   UpdateProductionOrderStatusPayload,
   CreateLoanRequestPayload,
   ActivityReportAPI,
@@ -146,10 +147,29 @@ export async function createProductionOrder(payload: ProductionOrderPayload): Pr
   formData.append('type', payload.type);
   if (payload.machineId !== undefined) formData.append('machineId', String(payload.machineId));
   formData.append('notes', payload.notes);
-  formData.append('file', payload.file);
+  formData.append('dimensions', payload.dimensions);
+  if (payload.file) formData.append('file', payload.file);
   const response = await api.post<ProductionOrderAPI>('/orders', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
+  return response.data;
+}
+
+export async function updateMyProductionOrder(payload: UpdateProductionOrderPayload): Promise<ProductionOrderAPI> {
+  const formData = new FormData();
+  formData.append('type', payload.type);
+  if (payload.machineId !== undefined) formData.append('machineId', String(payload.machineId));
+  formData.append('notes', payload.notes);
+  formData.append('dimensions', payload.dimensions);
+  if (payload.file) formData.append('file', payload.file);
+  const response = await api.put<ProductionOrderAPI>(`/orders/${payload.id}`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return response.data;
+}
+
+export async function addProductionOrderComment(id: number, message: string): Promise<ProductionOrderAPI> {
+  const response = await api.post<ProductionOrderAPI>(`/orders/${id}/comments`, { message });
   return response.data;
 }
 

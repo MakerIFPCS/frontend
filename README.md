@@ -39,11 +39,12 @@ períodos sobrepostos.
 ## Pedidos de fabricação
 
 Em <http://localhost:3000/pedidos>, usuários autenticados podem enviar um
-arquivo de qualquer formato para corte a laser ou impressão 3D, selecionar uma
-impressora disponível e acompanhar a análise. A página
-**Pedidos de fabricação** do painel administrativo permite baixar os arquivos
-e aprovar ou recusar solicitações. Os anexos são salvos no banco de dados e
-aceitam até 100 MB por arquivo.
+pedido de corte a laser, impressão 3D ou usinagem CNC, com ou sem arquivo
+inicial. Enquanto estiver aberto, o usuário pode editar o pedido, anexar ou
+substituir o arquivo e conversar com a equipe. A página **Pedidos de
+fabricação** do painel administrativo permite revisar os pedidos, solicitar
+informações, aprovar, recusar ou reabrir solicitações. Os anexos são salvos no
+banco de dados e aceitam até 100 MB por arquivo.
 
 ## Relatórios administrativos
 
