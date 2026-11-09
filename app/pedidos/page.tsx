@@ -61,6 +61,8 @@ const STATUS_LABELS: Record<ProductionOrderStatus, string> = {
   PENDING: 'Aguardando análise',
   WAITING_FOR_UPDATE: 'Aguardando suas informações',
   APPROVED: 'Aprovado',
+  IN_PRODUCTION: 'Em produção',
+  READY_FOR_PICKUP: 'Pronto para retirada',
   REJECTED: 'Recusado',
 };
 
@@ -68,8 +70,17 @@ const STATUS_STYLES: Record<ProductionOrderStatus, string> = {
   PENDING: 'bg-amber-50 text-amber-800',
   WAITING_FOR_UPDATE: 'bg-sky-50 text-sky-800',
   APPROVED: 'bg-emerald-50 text-emerald-700',
+  IN_PRODUCTION: 'bg-violet-50 text-violet-800',
+  READY_FOR_PICKUP: 'bg-emerald-50 text-emerald-700',
   REJECTED: 'bg-rose-50 text-rose-700',
 };
+
+const PRODUCTION_STAGES: Array<{ status: ProductionOrderStatus; label: string }> = [
+  { status: 'PENDING', label: 'Solicitado' },
+  { status: 'APPROVED', label: 'Aprovado' },
+  { status: 'IN_PRODUCTION', label: 'Em produção' },
+  { status: 'READY_FOR_PICKUP', label: 'Pronto' },
+];
 
 const MAX_FILE_SIZE = 100 * 1024 * 1024;
 
@@ -83,6 +94,14 @@ function formatFileSize(size: number) {
   if (size < 1024) return `${size} bytes`;
   if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
   return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function formatReadyDate(value: string) {
+  return new Intl.DateTimeFormat('pt-BR', {
+    dateStyle: 'long',
+    timeStyle: 'short',
+    timeZone: 'America/Sao_Paulo',
+  }).format(new Date(value));
 }
 
 function OrderFile({ order }: { order: ProductionOrderAPI }) {
@@ -405,6 +424,45 @@ export default function ProductionOrdersPage() {
                     </div>
                     <span className={`rounded-full px-3 py-1 text-xs font-bold ${STATUS_STYLES[order.status]}`}>{STATUS_LABELS[order.status]}</span>
                   </div>
+                {order.status === 'WAITING_FOR_UPDATE' && (
+                  <p className="mt-4 rounded-lg bg-sky-50 p-3 text-sm text-sky-900">
+                    A equipe precisa das informações solicitadas acima para continuar o pedido.
+                  </p>
+                )}
+                {order.type === 'THREE_D_PRINTING'
+                  && order.status !== 'REJECTED'
+                  && order.status !== 'WAITING_FOR_UPDATE' && (
+                  <ol aria-label="Etapas do pedido" className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    {PRODUCTION_STAGES.map((stage, index) => {
+                      const currentIndex = PRODUCTION_STAGES.findIndex((item) => item.status === order.status);
+                      const isComplete = currentIndex >= 0 && index < currentIndex;
+                      const isCurrent = stage.status === order.status;
+                      return (
+                        <li
+                          key={stage.status}
+                          aria-current={isCurrent ? 'step' : undefined}
+                          className={`border-t-2 pt-2 text-xs font-semibold ${isComplete || isCurrent ? 'border-[#7000ff] text-[#050b33]' : 'border-[#dfe4ee] text-[#8992a5]'}`}
+                        >
+                          {stage.label}
+                        </li>
+                      );
+                    })}
+                  </ol>
+                )}
+                {order.type === 'THREE_D_PRINTING'
+                  && order.estimatedReadyAt
+                  && order.status !== 'READY_FOR_PICKUP'
+                  && order.status !== 'REJECTED' && (
+                  <p className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
+                    <strong>Previsão de conclusão informada pela equipe:</strong>{' '}
+                    <time dateTime={order.estimatedReadyAt}>{formatReadyDate(order.estimatedReadyAt)}</time>
+                  </p>
+                )}
+                {order.status === 'READY_FOR_PICKUP' && (
+                  <p className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm font-semibold text-emerald-900" role="status">
+                    Sua peça está pronta para retirada.
+                  </p>
+                )}
                 {order.fileName ? (
                   <div className="mt-4"><OrderFile order={order} /></div>
                 ) : (

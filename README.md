@@ -43,8 +43,16 @@ pedido de corte a laser, impressão 3D ou usinagem CNC, com ou sem arquivo
 inicial. Enquanto estiver aberto, o usuário pode editar o pedido, anexar ou
 substituir o arquivo e conversar com a equipe. A página **Pedidos de
 fabricação** do painel administrativo permite revisar os pedidos, solicitar
-informações, aprovar, recusar ou reabrir solicitações. Os anexos são salvos no
-banco de dados e aceitam até 100 MB por arquivo.
+informações, aprovar, acompanhar a produção, informar uma previsão de
+conclusão, marcar peças prontas para retirada, recusar ou reabrir solicitações.
+Os anexos são salvos no banco de dados e aceitam até 100 MB por arquivo.
+
+O acompanhamento de impressão 3D depende da API aceitar os estados
+`IN_PRODUCTION` e `READY_FOR_PICKUP`, retornar `estimatedReadyAt` como data/hora
+ISO 8601 (ou `null`) em `GET /api/orders` e `GET /api/orders/mine`, e aceitar
+`estimatedReadyAt` no `PATCH /api/orders/{id}/status`. A interface exibe a
+previsão no fuso `America/Sao_Paulo`; enquanto o backend não fornecer esse
+campo, nenhuma data é presumida.
 
 ## Relatórios administrativos
 

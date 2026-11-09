@@ -141,7 +141,13 @@ export interface UpdateLoanRequestStatusPayload {
 }
 
 export type ProductionOrderType = 'LASER_CUTTING' | 'THREE_D_PRINTING' | 'CNC_MACHINING';
-export type ProductionOrderStatus = 'PENDING' | 'WAITING_FOR_UPDATE' | 'APPROVED' | 'REJECTED';
+export type ProductionOrderStatus =
+  | 'PENDING'
+  | 'WAITING_FOR_UPDATE'
+  | 'APPROVED'
+  | 'IN_PRODUCTION'
+  | 'READY_FOR_PICKUP'
+  | 'REJECTED';
 
 export interface ProductionOrderCommentAPI {
   id: number;
@@ -163,6 +169,7 @@ export interface ProductionOrderAPI {
   notes: string;
   dimensions: string;
   status: ProductionOrderStatus;
+  estimatedReadyAt?: string | null;
   adminNotes: string | null;
   comments: ProductionOrderCommentAPI[];
   createdAt: string;
@@ -183,6 +190,7 @@ export interface UpdateProductionOrderPayload extends ProductionOrderPayload {
 
 export interface UpdateProductionOrderStatusPayload {
   status: ProductionOrderStatus;
+  estimatedReadyAt?: string | null;
   adminNotes?: string;
 }
 

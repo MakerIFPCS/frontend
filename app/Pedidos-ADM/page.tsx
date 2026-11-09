@@ -29,6 +29,8 @@ const STATUS_LABELS: Record<ProductionOrderStatus, string> = {
   PENDING: 'Aguardando análise',
   WAITING_FOR_UPDATE: 'Aguardando informações do usuário',
   APPROVED: 'Aprovado',
+  IN_PRODUCTION: 'Em produção',
+  READY_FOR_PICKUP: 'Pronto para retirada',
   REJECTED: 'Recusado',
 };
 
@@ -36,17 +38,82 @@ const STATUS_STYLES: Record<ProductionOrderStatus, string> = {
   PENDING: 'bg-amber-50 text-amber-800',
   WAITING_FOR_UPDATE: 'bg-sky-50 text-sky-800',
   APPROVED: 'bg-emerald-50 text-emerald-700',
+  IN_PRODUCTION: 'bg-violet-50 text-violet-800',
+  READY_FOR_PICKUP: 'bg-emerald-50 text-emerald-700',
   REJECTED: 'bg-rose-50 text-rose-700',
 };
 
-const STATUS_OPTIONS: ProductionOrderStatus[] = ['PENDING', 'WAITING_FOR_UPDATE', 'APPROVED', 'REJECTED'];
+const STATUS_OPTIONS: ProductionOrderStatus[] = [
+  'PENDING',
+  'WAITING_FOR_UPDATE',
+  'APPROVED',
+  'IN_PRODUCTION',
+  'READY_FOR_PICKUP',
+  'REJECTED',
+];
 const FILTER_OPTIONS: Array<{ value: ProductionOrderStatus | 'ALL'; label: string }> = [
   { value: 'ALL', label: 'Todos' },
   { value: 'PENDING', label: 'Aguardando análise' },
   { value: 'WAITING_FOR_UPDATE', label: 'Aguardando usuário' },
   { value: 'APPROVED', label: 'Aprovados' },
+  { value: 'IN_PRODUCTION', label: 'Em produção' },
+  { value: 'READY_FOR_PICKUP', label: 'Prontos para retirada' },
   { value: 'REJECTED', label: 'Recusados' },
 ];
+
+const LAB_TIME_ZONE = 'America/Sao_Paulo';
+
+function getLabDateTimeParts(date: Date) {
+  return Object.fromEntries(new Intl.DateTimeFormat('en-CA', {
+    timeZone: LAB_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(date).map(({ type, value }) => [type, value]));
+}
+
+function toLabDateTimeInput(value: string | null | undefined) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const parts = getLabDateTimeParts(date);
+  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
+}
+
+function toLabDateTimeIso(value: string) {
+  const [year, month, day, hour, minute] = value.split(/[-T:]/).map(Number);
+  const targetTime = Date.UTC(year, month - 1, day, hour, minute);
+  let timestamp = targetTime;
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const parts = getLabDateTimeParts(new Date(timestamp));
+    const representedTime = Date.UTC(
+      Number(parts.year),
+      Number(parts.month) - 1,
+      Number(parts.day),
+      Number(parts.hour),
+      Number(parts.minute),
+    );
+    const adjustment = targetTime - representedTime;
+    if (adjustment === 0) break;
+    timestamp += adjustment;
+  }
+
+  const resolvedParts = getLabDateTimeParts(new Date(timestamp));
+  if (
+    Number(resolvedParts.year) !== year
+    || Number(resolvedParts.month) !== month
+    || Number(resolvedParts.day) !== day
+    || Number(resolvedParts.hour) !== hour
+    || Number(resolvedParts.minute) !== minute
+  ) {
+    return null;
+  }
+  return new Date(timestamp).toISOString();
+}
 
 export default function ProductionOrdersAdminPage() {
   const authorized = useAdminAccess();
@@ -55,6 +122,8 @@ export default function ProductionOrdersAdminPage() {
   const [search, setSearch] = useState('');
   const [notes, setNotes] = useState<Record<number, string>>({});
   const [selectedStatuses, setSelectedStatuses] = useState<Record<number, ProductionOrderStatus>>({});
+  const [estimatedReadyDates, setEstimatedReadyDates] = useState<Record<number, string>>({});
+  const [changedEstimatedDates, setChangedEstimatedDates] = useState<Record<number, boolean>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [reviewingId, setReviewingId] = useState<number | null>(null);
   const [error, setError] = useState('');
@@ -64,7 +133,13 @@ export default function ProductionOrdersAdminPage() {
     if (!authorized) return;
     let active = true;
     getProductionOrders()
-      .then((loadedOrders) => { if (active) setOrders(loadedOrders); })
+      .then((loadedOrders) => {
+        if (!active) return;
+        setOrders(loadedOrders);
+        setEstimatedReadyDates(Object.fromEntries(
+          loadedOrders.map((order) => [order.id, toLabDateTimeInput(order.estimatedReadyAt)]),
+        ));
+      })
       .catch((loadError: unknown) => { if (active) setError(getApiError(loadError)); })
       .finally(() => { if (active) setIsLoading(false); });
     return () => { active = false; };
@@ -90,23 +165,42 @@ export default function ProductionOrdersAdminPage() {
     setError('');
     setNotice('');
     const status = selectedStatuses[id] ?? orders.find((order) => order.id === id)?.status ?? 'PENDING';
+    const order = orders.find((item) => item.id === id);
     const adminNotes = notes[id]?.trim() ?? '';
+    const estimatedReadyAt = estimatedReadyDates[id] ?? '';
     if ((status === 'WAITING_FOR_UPDATE' || status === 'REJECTED') && !adminNotes) {
       setError(status === 'WAITING_FOR_UPDATE'
         ? 'Explique quais informações o solicitante precisa enviar antes de pedir uma atualização.'
         : 'Informe o motivo antes de recusar o pedido.');
       return;
     }
+    if (order?.type === 'THREE_D_PRINTING' && status === 'IN_PRODUCTION' && !estimatedReadyAt) {
+      setError('Informe a previsão de conclusão antes de marcar o pedido como em produção.');
+      return;
+    }
+    const estimatedReadyAtIso = estimatedReadyAt ? toLabDateTimeIso(estimatedReadyAt) : null;
+    if (changedEstimatedDates[id] && estimatedReadyAt && !estimatedReadyAtIso) {
+      setError('Informe uma data e horário válidos no fuso do laboratório.');
+      return;
+    }
     setReviewingId(id);
     try {
       const updated = await updateProductionOrderStatus(id, {
         status,
+        ...(changedEstimatedDates[id]
+          ? { estimatedReadyAt: estimatedReadyAtIso }
+          : {}),
         adminNotes: adminNotes || undefined,
       });
       setOrders((current) => current.map((order) => order.id === id ? updated : order));
       setSelectedStatuses((current) => ({ ...current, [id]: updated.status }));
+      setEstimatedReadyDates((current) => ({
+        ...current,
+        [id]: toLabDateTimeInput(updated.estimatedReadyAt),
+      }));
+      setChangedEstimatedDates((current) => ({ ...current, [id]: false }));
       setNotes((current) => ({ ...current, [id]: '' }));
-      setNotice('Pedido atualizado. A mensagem foi registrada na conversa.');
+      setNotice('Pedido atualizado.');
     } catch (reviewError: unknown) {
       setError(getApiError(reviewError));
     } finally {
@@ -233,6 +327,16 @@ export default function ProductionOrdersAdminPage() {
                     {order.fileName && <p className="text-sm text-[#56617d]">Arquivo: {order.fileName}</p>}
                     {order.dimensions && <p className="whitespace-pre-wrap text-sm leading-6 text-[#56617d]"><strong>Dimensões:</strong> {order.dimensions}</p>}
                     {order.notes && <p className="whitespace-pre-wrap text-sm leading-6 text-[#56617d]"><strong>Observações:</strong> {order.notes}</p>}
+                    {order.type === 'THREE_D_PRINTING' && order.estimatedReadyAt && (
+                      <p className="text-sm text-[#56617d]">
+                        <strong>Previsão de conclusão:</strong>{' '}
+                        {new Intl.DateTimeFormat('pt-BR', {
+                          dateStyle: 'long',
+                          timeStyle: 'short',
+                          timeZone: LAB_TIME_ZONE,
+                        }).format(new Date(order.estimatedReadyAt))}
+                      </p>
+                    )}
                     {order.comments?.map((comment) => (
                       <div key={comment.id} className="rounded-lg bg-[#f5f7fb] p-3">
                         <p className="text-xs font-semibold text-[#68728a]">{comment.authorName} · {comment.authorRole === 'ADMIN' ? 'Equipe' : 'Solicitante'} · {new Date(comment.createdAt).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}</p>
@@ -249,9 +353,28 @@ export default function ProductionOrdersAdminPage() {
                         }}
                         className="mt-1 w-full rounded-lg border border-[#cbd2df] bg-white px-3 py-2 font-normal"
                       >
-                        {STATUS_OPTIONS.map((status) => <option key={status} value={status}>{STATUS_LABELS[status]}</option>)}
+                        {STATUS_OPTIONS
+                          .filter((status) => order.type === 'THREE_D_PRINTING'
+                            || (status !== 'IN_PRODUCTION' && status !== 'READY_FOR_PICKUP'))
+                          .map((status) => <option key={status} value={status}>{STATUS_LABELS[status]}</option>)}
                       </select>
                     </label>
+                    {order.type === 'THREE_D_PRINTING'
+                      && (selectedStatus === 'APPROVED' || selectedStatus === 'IN_PRODUCTION') && (
+                      <label className="block text-sm font-semibold">
+                        Previsão de conclusão
+                        <input
+                          type="datetime-local"
+                          value={estimatedReadyDates[order.id] ?? ''}
+                          onChange={(event) => {
+                            setEstimatedReadyDates((current) => ({ ...current, [order.id]: event.target.value }));
+                            setChangedEstimatedDates((current) => ({ ...current, [order.id]: true }));
+                          }}
+                          className="mt-1 w-full rounded-lg border border-[#cbd2df] bg-white px-3 py-2 font-normal"
+                        />
+                        <span className="mt-1 block font-normal text-[#68728a]">Fuso America/Sao_Paulo; será exibido ao solicitante.</span>
+                      </label>
+                    )}
                     {needsExplanation && (
                       <label className="block text-sm font-semibold">
                         Mensagem para o solicitante <span className="font-normal text-[#68728a]">(obrigatória)</span>
