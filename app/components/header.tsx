@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { LogIn, LogOut, User, UserPlus, Menu, X } from 'lucide-react';
 import { getUserThemePreference, subscribeToTheme } from '@/app/lib/theme';
+import NotificationBell from '@/app/components/notification-bell';
 
 interface HeaderProps {
   authenticated?: boolean;
@@ -117,6 +118,11 @@ export default function Header({ authenticated, userName, userId }: HeaderProps)
 
           {isAuth ? (
             <div className="flex items-center gap-3">
+              <NotificationBell
+                authenticated={Boolean(isAuth && storedToken && currentUserId && userRole)}
+                userId={currentUserId}
+                userRole={userRole}
+              />
               <Link
                 href={profileHref}
                 title="Ir para o meu perfil"

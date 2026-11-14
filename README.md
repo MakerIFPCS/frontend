@@ -61,6 +61,17 @@ por data e exportar o resultado exibido em PDF. O endpoint e as limitações do
 histórico anterior à auditoria estão descritos no
 [`backend/README.md`](../backend/README.md#relatório-de-atividades).
 
+## Notificações
+
+O sino da barra superior acompanha os pedidos de fabricação e empréstimos do
+usuário autenticado, incluindo novas solicitações e mudanças de status. Para
+administradores, também sinaliza novos pedidos, empréstimos e agendamentos.
+As atualizações são consultadas a cada 30 segundos e ao retornar à aba; o
+histórico de leitura fica salvo neste navegador por conta. Na primeira consulta,
+solicitações antigas já concluídas não geram alertas retroativos; pedidos,
+empréstimos e agendamentos que ainda aguardam análise aparecem para a
+administração.
+
 Para entrar com as contas de demonstração criadas pelo backend:
 
 | Perfil | E-mail | Senha |

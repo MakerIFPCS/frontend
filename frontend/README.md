@@ -1,0 +1,78 @@
+# Frontend
+
+Aplicação web em Next.js. Para executar a aplicação completa, suba primeiro a
+API e o PostgreSQL seguindo as instruções do
+[`backend/README.md`](../backend/README.md).
+
+## Executar com Docker Compose
+
+No diretório `frontend`, rode:
+
+```sh
+docker compose up --build -d
+```
+
+A interface estará disponível em <http://localhost:3000>. Por padrão, ela usa
+a API em <http://localhost:8081/api>. Se necessário, defina
+`NEXT_PUBLIC_API_BASE_URL` em `frontend/.env` antes do build; por ser uma
+variável `NEXT_PUBLIC_`, o valor é incluído no bundle durante a compilação da
+imagem.
+
+## Materiais do laboratório
+
+A página <http://localhost:3000/materiais> mostra o estoque cadastrado.
+Administradores podem cadastrar materiais com quantidade e unidade pela seção
+**Materiais** do painel administrativo; também é possível editar o cadastro
+existente por essa página. A API permite consultar
+`GET /api/materials` publicamente; `POST /api/materials` exige uma sessão de
+administrador.
+
+## Empréstimos
+
+Usuários autenticados podem selecionar várias máquinas e materiais, solicitar
+datas de retirada e devolução e acompanhar o status em
+<http://localhost:3000/emprestimos>. A administração analisa os pedidos na
+seção **Empréstimos** do painel. Materiais são descontados do estoque somente
+quando um pedido é aprovado; uma máquina não pode ter pedidos aprovados com
+períodos sobrepostos.
+
+## Pedidos de fabricação
+
+Em <http://localhost:3000/pedidos>, usuários autenticados podem enviar um
+arquivo de qualquer formato para corte a laser ou impressão 3D, selecionar uma
+impressora disponível e acompanhar a análise. A página
+**Pedidos de fabricação** do painel administrativo permite baixar os arquivos
+e aprovar ou recusar solicitações. Os anexos são salvos no banco de dados e
+aceitam até 100 MB por arquivo.
+
+## Relatórios administrativos
+
+A página **Relatórios** consulta atividades reais pela API, permite filtrar
+por data e exportar o resultado exibido em PDF. O endpoint e as limitações do
+histórico anterior à auditoria estão descritos no
+[`backend/README.md`](../backend/README.md#relatório-de-atividades).
+
+Para entrar com as contas de demonstração criadas pelo backend:
+
+| Perfil | E-mail | Senha |
+| --- | --- | --- |
+| Admin | `admin@sitemaker.local` | `admin12345678` |
+| Usuário | `usuario@sitemaker.local` | `usuario123` |
+
+Comandos úteis, executados no diretório `frontend`:
+
+```sh
+docker compose logs -f frontend  # acompanhar os logs
+docker compose down              # parar o container
+```
+
+## Executar localmente para desenvolvimento
+
+Com a API disponível em <http://localhost:8081>, execute:
+
+```sh
+npm ci
+npm run dev
+```
+
+Depois, abra <http://localhost:3000>.
