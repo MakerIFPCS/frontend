@@ -58,6 +58,7 @@ export default function Header({ authenticated, userName, userId }: HeaderProps)
 
   // Verificadores de rota para realce visual
   const isInicio = pathname === '/';
+  const isCapacitacoes = pathname === '/capacitacoes';
   const isAgendamento = pathname === '/Agendamento-ADM';
   const isNormas = pathname === '/normas';
 
@@ -99,6 +100,17 @@ export default function Header({ authenticated, userName, userId }: HeaderProps)
             <Link href="/" className="transition-colors hover:text-[#00ff9d]">Início</Link>
             <Link href="/materiais" className="transition-colors hover:text-[#00ff9d]">Materiais</Link>
             <Link href="/maquinas" className="transition-colors hover:text-[#00ff9d]">Máquinas</Link>
+            <Link
+              href="/capacitacoes"
+              aria-current={isCapacitacoes ? 'page' : undefined}
+              className={`transition-colors hover:text-[#00ff9d] ${
+                isCapacitacoes
+                  ? 'border-b-2 border-[#7000ff] pb-1 text-[#00ff9d]'
+                  : ''
+              }`}
+            >
+              Capacitações
+            </Link>
             <Link href="/pedidos" className="transition-colors hover:text-[#00ff9d]">Pedidos</Link>
             <Link href="/emprestimos" className="transition-colors hover:text-[#00ff9d]">Empréstimos</Link>
             <Link href="/normas" className="transition-colors hover:text-[#00ff9d]">Normas</Link>
@@ -192,6 +204,16 @@ export default function Header({ authenticated, userName, userId }: HeaderProps)
             className="px-3 py-2 rounded-lg font-semibold text-sm text-white/90 hover:bg-white/5 transition-colors"
           >
             Máquinas
+          </Link>
+          <Link
+            href="/capacitacoes"
+            onClick={() => setMobileMenuOpen(false)}
+            aria-current={isCapacitacoes ? 'page' : undefined}
+            className={`px-3 py-2 rounded-lg font-semibold text-sm transition-colors ${
+              isCapacitacoes ? 'bg-white/10 text-[#00ff9d]' : 'text-white/90 hover:bg-white/5'
+            }`}
+          >
+            Capacitações
           </Link>
           <Link
             href="/pedidos"
