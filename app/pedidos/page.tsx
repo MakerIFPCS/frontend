@@ -217,6 +217,9 @@ export default function ProductionOrdersPage() {
         file: file ?? undefined,
       });
       setOrders((current) => [order, ...current]);
+      window.dispatchEvent(new CustomEvent('notifications-refresh', {
+        detail: { kind: 'order', id: order.id },
+      }));
       setFile(null);
       setNotes('');
       setDimensions('');

@@ -191,6 +191,9 @@ export default function LoansPage() {
         reason: reason.trim(),
       });
       setRequests((current) => [request, ...current]);
+      window.dispatchEvent(new CustomEvent('notifications-refresh', {
+        detail: { kind: 'loan', id: request.id },
+      }));
       setSelectedItems({});
       setPickupDate('');
       setReturnDate('');
