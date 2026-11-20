@@ -205,3 +205,22 @@ export async function getActivityReport(from?: string, to?: string): Promise<Act
   });
   return response.data;
 }
+/////
+export async function getTrainings(): Promise<TrainingAPI[]> {
+  const response = await api.get<TrainingAPI[]>('/trainings');
+  return response.data;
+}
+
+export async function createTraining(payload: TrainingPayload): Promise<TrainingAPI> {
+  const response = await api.post<TrainingAPI>('/trainings', payload);
+  return response.data;
+}
+
+export async function updateTraining(id: string | number, payload: TrainingPayload): Promise<TrainingAPI> {
+  const response = await api.put<TrainingAPI>(`/trainings/${id}`, payload);
+  return response.data;
+}
+
+export async function deleteTraining(id: string | number): Promise<void> {
+  await api.delete(`/trainings/${id}`);
+}
