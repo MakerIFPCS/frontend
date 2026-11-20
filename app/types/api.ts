@@ -209,3 +209,28 @@ export interface ActivityReportAPI {
   untilDate: string | null;
   events: ActivityReportEventAPI[];
 }
+
+export type TrainingCategoryAPI = 'COURSE' | 'WORKSHOP' | 'LECTURE' | 'TRAINING';
+
+export interface TrainingAPI {
+  id: number;
+  name: string;
+  description: string;
+  category: TrainingCategoryAPI;
+  date: string | null;
+  time: string | null;
+  location: string | null;
+  image: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TrainingPayload {
+  name: string;
+  description: string;
+  category: TrainingCategoryAPI;
+  date: string;
+  time: string;
+  location: string;
+  image?: string;
+}
