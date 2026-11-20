@@ -7,6 +7,8 @@ import type {
   MaterialPayload,
   MachineAPI,
   MachinePayload,
+  TrainingAPI,    
+  TrainingPayload,
   ProductionOrderAPI,
   ProductionOrderPayload,
   UpdateProductionOrderPayload,
