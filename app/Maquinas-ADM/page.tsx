@@ -6,7 +6,6 @@ import Link from 'next/link';
 import {
   Wrench,
   Home,
-  Calendar,
   Users,
   BarChart3,
   Settings,
@@ -339,13 +338,6 @@ export default function MaquinasAdmPage() {
               label="Máquinas"
               href="/Maquinas-ADM"
               active
-              collapsed={!sidebarOpen}
-            />
-
-            <SidebarItem
-              icon={<Calendar className="w-5 h-5" />}
-              label="Agendamentos"
-              href="/Agendamento-ADM"
               collapsed={!sidebarOpen}
             />
 

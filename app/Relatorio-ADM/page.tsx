@@ -25,9 +25,10 @@ function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : 'Não foi possível carregar o relatório.';
 }
 
-function exportActivityReport(report: ActivityReportAPI) {
+function exportActivityReport(report: ActivityReportAPI, events: ActivityReportEventAPI[], categories: string[]) {
   const document = new jsPDF({ orientation: 'landscape' });
   const generatedAt = formatDateTime(report.generatedAt);
+  const categoryLabel = categories.length ? categories.join(', ') : 'Nenhuma categoria';
   const period = report.fromDate || report.untilDate
     ? `${report.fromDate ? new Date(report.fromDate).toLocaleDateString('pt-BR') : 'Início'} até ${
         report.untilDate ? new Date(new Date(report.untilDate).getTime() - 1).toLocaleDateString('pt-BR') : 'Hoje'
@@ -36,7 +37,7 @@ function exportActivityReport(report: ActivityReportAPI) {
 
   document.setProperties({
     title: 'Relatório de atividades - Lab Maker',
-    subject: `Atividades administrativas: ${period}`,
+    subject: `Atividades administrativas: ${categoryLabel} · ${period}`,
     creator: 'Lab Maker',
   });
   document.setFontSize(18);
@@ -45,9 +46,10 @@ function exportActivityReport(report: ActivityReportAPI) {
   document.setFontSize(10);
   document.setTextColor(86, 97, 125);
   document.text(`Período: ${period}`, 14, 26);
-  document.text(`Gerado em ${generatedAt} · ${report.events.length} atividade(s)`, 14, 32);
+  document.text(`Categorias: ${categoryLabel}`, 14, 32);
+  document.text(`Gerado em ${generatedAt} · ${events.length} atividade(s)`, 14, 38);
 
-  const rows = report.events.map((event) => [
+  const rows = events.map((event) => [
     formatDateTime(event.occurredAt),
     event.category,
     event.action,
@@ -56,7 +58,7 @@ function exportActivityReport(report: ActivityReportAPI) {
     event.details || '—',
   ]);
   autoTable(document, {
-    startY: 39,
+    startY: 45,
     head: [['Data e hora', 'Categoria', 'Ação', 'Registro', 'Responsável', 'Detalhes']],
     body: rows.length ? rows : [['—', '—', 'Nenhuma atividade no período', '—', '—', '—']],
     styles: { font: 'helvetica', fontSize: 8, cellPadding: 2.5, overflow: 'linebreak' },
@@ -89,6 +91,7 @@ export default function RelatoriosPage() {
   const [report, setReport] = useState<ActivityReportAPI | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedCategories, setSelectedCategories] = useState<string[] | null>(null);
 
   const loadReport = useCallback(async (from?: string, to?: string) => {
     setLoading(true);
@@ -128,6 +131,33 @@ export default function RelatoriosPage() {
     }
     return [...counts.entries()].sort(([first], [second]) => first.localeCompare(second, 'pt-BR'));
   }, [report]);
+  const availableCategories = useMemo(
+    () => categoryCounts.map(([category]) => category),
+    [categoryCounts],
+  );
+  const activeCategories = selectedCategories === null
+    ? availableCategories
+    : selectedCategories.filter((category) => availableCategories.includes(category));
+  const filteredEvents = useMemo(
+    () => (report?.events ?? []).filter((event) => activeCategories.includes(event.category)),
+    [activeCategories, report],
+  );
+  const filteredCategoryCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const event of filteredEvents) {
+      counts.set(event.category, (counts.get(event.category) ?? 0) + 1);
+    }
+    return [...counts.entries()].sort(([first], [second]) => first.localeCompare(second, 'pt-BR'));
+  }, [filteredEvents]);
+
+  function toggleCategory(category: string) {
+    setSelectedCategories((current) => {
+      const selected = current === null ? availableCategories : current;
+      return selected.includes(category)
+        ? selected.filter((item) => item !== category)
+        : [...selected, category];
+    });
+  }
 
   function handleFilter(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -152,7 +182,7 @@ export default function RelatoriosPage() {
           </div>
           <button
             type="button"
-            onClick={() => report && exportActivityReport(report)}
+            onClick={() => report && exportActivityReport(report, filteredEvents, activeCategories)}
             disabled={!report || loading}
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#050b33] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#101d5e] disabled:cursor-not-allowed disabled:opacity-50"
           >
@@ -209,6 +239,65 @@ export default function RelatoriosPage() {
           </button>
         </form>
 
+        <section className="mb-6 rounded-2xl border border-[#dfe4ee] bg-white p-5 shadow-sm" aria-label="Filtrar por assunto">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="font-bold">Assuntos do relatório</h2>
+              <p className="mt-1 text-sm text-[#56617d]">Selecione um ou mais tipos de informação para visualizar.</p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setSelectedCategories(null)}
+                aria-pressed={selectedCategories === null}
+                className={`rounded-lg border px-3 py-2 text-sm font-bold transition ${
+                  selectedCategories === null
+                    ? 'border-[#050b33] bg-[#050b33] text-white'
+                    : 'border-[#dfe4ee] text-[#56617d] hover:bg-[#f5f7fb]'
+                }`}
+              >
+                Todos
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedCategories([])}
+                aria-pressed={selectedCategories !== null && activeCategories.length === 0}
+                className="rounded-lg border border-[#dfe4ee] px-3 py-2 text-sm font-bold text-[#56617d] transition hover:bg-[#f5f7fb]"
+              >
+                Nenhum
+              </button>
+            </div>
+          </div>
+          {availableCategories.length > 0 ? (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {availableCategories.map((category) => {
+                const checked = activeCategories.includes(category);
+                const count = categoryCounts.find(([name]) => name === category)?.[1] ?? 0;
+                return (
+                  <label
+                    key={category}
+                    className={`inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-2 text-sm font-semibold transition ${
+                      checked
+                        ? 'border-[#7000ff]/40 bg-[#f0e9ff] text-[#5d00d6]'
+                        : 'border-[#dfe4ee] bg-white text-[#56617d]'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleCategory(category)}
+                      className="h-4 w-4 accent-[#7000ff]"
+                    />
+                    {category} <span className="text-xs opacity-70">({count})</span>
+                  </label>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="mt-4 text-sm text-[#56617d]">As categorias aparecerão quando houver atividades no relatório.</p>
+          )}
+        </section>
+
         {error && (
           <div role="alert" className="mb-6 flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 sm:flex-row sm:items-center sm:justify-between">
             <p>Não foi possível carregar o relatório: {error}</p>
@@ -219,11 +308,11 @@ export default function RelatoriosPage() {
         )}
 
         <section aria-label="Resumo das atividades" className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <SummaryCard label="Atividades no período" value={report?.events.length ?? 0} />
-          {categoryCounts.slice(0, 3).map(([category, count]) => (
+          <SummaryCard label="Atividades selecionadas" value={filteredEvents.length} />
+          {filteredCategoryCounts.map(([category, count]) => (
             <SummaryCard key={category} label={category} value={count} />
           ))}
-          {!loading && categoryCounts.length === 0 && (
+          {!loading && filteredCategoryCounts.length === 0 && (
             <SummaryCard label="Categorias registradas" value={0} />
           )}
         </section>
@@ -233,7 +322,7 @@ export default function RelatoriosPage() {
             <div>
               <h2 className="font-bold">Movimentações</h2>
               <p className="mt-1 text-xs text-[#56617d]">
-                {report ? `${report.events.length} registro(s)` : 'Aguardando dados'}
+                {report ? `${filteredEvents.length} de ${report.events.length} registro(s)` : 'Aguardando dados'}
                 {report?.generatedAt ? ` · Atualizado em ${formatDateTime(report.generatedAt)}` : ''}
               </p>
             </div>
@@ -251,13 +340,13 @@ export default function RelatoriosPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#e9edf4]">
-                {report?.events.map((event, index) => (
+                {filteredEvents.map((event, index) => (
                   <ActivityRow key={`${event.occurredAt}-${index}`} event={event} />
                 ))}
-                {!loading && !error && report?.events.length === 0 && (
+                {!loading && !error && filteredEvents.length === 0 && (
                   <tr>
                     <td colSpan={5} className="px-5 py-12 text-center text-[#56617d]">
-                      Nenhuma movimentação encontrada para o período selecionado.
+                      Nenhuma movimentação encontrada para os assuntos e período selecionados.
                     </td>
                   </tr>
                 )}

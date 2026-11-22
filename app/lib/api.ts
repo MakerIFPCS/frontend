@@ -16,8 +16,6 @@ import type {
   CreateLoanRequestPayload,
   ActivityReportAPI,
   LoanRequestAPI,
-  SchedulingRequestAPI,
-  SchedulingRequestPayload,
   UpdateLoanRequestStatusPayload,
   User,
 } from '@/app/types/api';
@@ -47,6 +45,16 @@ export async function createUser(payload: CreateUserRequest): Promise<User> {
 
 export async function loginUser(payload: LoginRequest): Promise<LoginResponse> {
   const response = await api.post<LoginResponse>('/auth/login', payload);
+  return response.data;
+}
+
+export async function verifyEmail(token: string): Promise<{ message: string }> {
+  const response = await api.post<{ message: string }>('/auth/verify-email', { token });
+  return response.data;
+}
+
+export async function resendEmailVerification(email: string): Promise<{ message: string }> {
+  const response = await api.post<{ message: string }>('/auth/resend-verification', { email });
   return response.data;
 }
 
@@ -80,6 +88,10 @@ export async function updateMaterial(id: number, payload: MaterialPayload): Prom
   return response.data;
 }
 
+export async function deleteMaterial(id: number): Promise<void> {
+  await api.delete(`/materials/${id}`);
+}
+
 export async function getMachines(): Promise<MachineAPI[]> {
   const response = await api.get<MachineAPI[]>('/machines');
   return response.data;
@@ -97,28 +109,6 @@ export async function updateMachine(id: string, payload: MachinePayload): Promis
 
 export async function deleteMachine(id: string): Promise<void> {
   await api.delete(`/machines/${id}`);
-}
-
-export async function getSchedulingRequests(): Promise<SchedulingRequestAPI[]> {
-  const response = await api.get<SchedulingRequestAPI[]>('/agendamentos');
-  return response.data;
-}
-
-export async function createSchedulingRequest(payload: SchedulingRequestPayload): Promise<SchedulingRequestAPI> {
-  const response = await api.post<SchedulingRequestAPI>('/agendamentos', payload);
-  return response.data;
-}
-
-export async function updateSchedulingRequest(
-  id: string,
-  payload: SchedulingRequestPayload,
-): Promise<SchedulingRequestAPI> {
-  const response = await api.put<SchedulingRequestAPI>(`/agendamentos/${id}`, payload);
-  return response.data;
-}
-
-export async function deleteSchedulingRequest(id: string): Promise<void> {
-  await api.delete(`/agendamentos/${id}`);
 }
 
 export async function createLoanRequest(payload: CreateLoanRequestPayload): Promise<LoanRequestAPI> {

@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { User, Lock, Mail, CreditCard } from 'lucide-react';
-import { createUser, loginUser } from '@/app/lib/api';
+import { createUser } from '@/app/lib/api';
 import type { CreateUserRequest } from '@/app/types/api';
 import Header from '@/app/components/header';
 
@@ -42,17 +42,7 @@ export default function SignupPage() {
 
     try {
       const user = await createUser(form);
-      try {
-        const response = await loginUser({ email: form.email, password: form.password });
-        localStorage.setItem('authToken', `${response.tokenType} ${response.token}`);
-        localStorage.setItem('userId', String(response.userId));
-        localStorage.setItem('userRole', response.role);
-        localStorage.setItem('userName', response.userName);
-        window.dispatchEvent(new Event('auth-changed'));
-        router.push(response.role === 'ADMIN' ? '/admin' : '/');
-      } catch {
-        router.push(`/login?registered=1&email=${encodeURIComponent(user.email)}`);
-      }
+      router.push(`/verify-email?email=${encodeURIComponent(user.email)}&sent=1`);
     } catch (error: unknown) {
       const apiMessage = axios.isAxiosError<{ message?: string }>(error)
         ? error.response?.data?.message
@@ -98,7 +88,7 @@ export default function SignupPage() {
               alt="Lab Maker" 
               width={220} 
               height={60} 
-              className="h-14 w-auto object-contain mb-2"
+              className="h-14 w-auto object-contain mb-2 dark-readable-logo"
             />
 
             {/* FORMULÁRIO DE CADASTRO */}

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import type { FormEvent } from 'react';
 import { isAxiosError } from 'axios';
-import { Box, Download, FileUp, Printer, Scissors, Wrench } from 'lucide-react';
+import { Box, Download, FileUp, Printer, Scissors } from 'lucide-react';
 import Header from '@/app/components/header';
 import {
   addProductionOrderComment,
@@ -35,6 +35,9 @@ function getAuthToken() {
 
 function getApiError(error: unknown) {
   if (isAxiosError<{ message?: unknown; detail?: unknown }>(error)) {
+    if (error.response?.status === 403) {
+      return 'Você não tem permissão para acessar este pedido. Entre na conta usada para enviá-lo ou entre em contato com a equipe do laboratório.';
+    }
     const responseData = error.response?.data;
     if (responseData && typeof responseData === 'object') {
       if ('message' in responseData && typeof responseData.message === 'string') {
@@ -46,9 +49,8 @@ function getApiError(error: unknown) {
     }
     if (error.response) {
       if (error.response.status === 401) return 'Sua sessão expirou. Entre novamente e tente de novo.';
-      if (error.response.status === 403) return 'A API recusou a solicitação (HTTP 403). Confira a conta e as permissões.';
       if (error.response.status === 413) return 'O arquivo excede o limite aceito pelo servidor (100 MB).';
-      return `A API retornou um erro (HTTP ${error.response.status}).`;
+      return `Não foi possível concluir a solicitação (erro ${error.response.status}). Tente novamente ou entre em contato com a equipe do laboratório.`;
     }
     if (error.message) {
       return `Não foi possível conectar à API (${error.message}).`;
@@ -180,7 +182,7 @@ export default function ProductionOrdersPage() {
     if (type === 'THREE_D_PRINTING') {
       return machine.type === 'Impressão 3D' || machine.type === 'Impressao 3D';
     }
-    return type === 'CNC_MACHINING' && (machine.type ?? '').toUpperCase().includes('CNC');
+    return false;
   }), [machines, type]);
   const editAvailableMachines = useMemo(() => machines.filter((machine) => {
     if (machine.status !== 'AVAILABLE' && machine.status !== 'FUNCTIONAL') return false;
@@ -196,6 +198,10 @@ export default function ProductionOrdersPage() {
     setNotice('');
     if (!token) {
       setError('Entre na sua conta para enviar um pedido.');
+      return;
+    }
+    if (!dimensions.trim()) {
+      setError('Preencha as dimensões e especificações do pedido.');
       return;
     }
     if (file && file.size > MAX_FILE_SIZE) {
@@ -249,6 +255,10 @@ export default function ProductionOrdersPage() {
     if (!order) return;
     setError('');
     setNotice('');
+    if (!editDimensions.trim()) {
+      setError('Preencha as dimensões e especificações do pedido.');
+      return;
+    }
     if (editType !== 'LASER_CUTTING' && !editMachineId) {
       setError('Selecione uma máquina disponível.');
       return;
@@ -309,7 +319,7 @@ export default function ProductionOrdersPage() {
         </div>
 
         <p className="mb-8 max-w-3xl leading-7 text-[#56617d]">
-          Solicite corte a laser, impressão 3D ou usinagem CNC. Você pode enviar o arquivo e completar medidas e detalhes depois, se necessário.
+          Solicite corte a laser ou impressão 3D. Você pode enviar o arquivo e completar medidas e detalhes depois, se necessário.
         </p>
 
         {!token && <p className="mb-5 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">Entre na sua conta para enviar e acompanhar pedidos.</p>}
@@ -335,14 +345,6 @@ export default function ProductionOrdersPage() {
                 className={`flex items-center gap-3 rounded-lg border p-4 text-left font-semibold ${type === 'THREE_D_PRINTING' ? 'border-[#7000ff] bg-violet-50' : 'border-[#dfe4ee]'}`}
               >
                 <Printer className="h-5 w-5 text-[#7000ff]" /> Impressão 3D
-              </button>
-              <button
-                type="button"
-                onClick={() => { setType('CNC_MACHINING'); setMachineId(''); }}
-                aria-pressed={type === 'CNC_MACHINING'}
-                className={`flex items-center gap-3 rounded-lg border p-4 text-left font-semibold ${type === 'CNC_MACHINING' ? 'border-[#7000ff] bg-violet-50' : 'border-[#dfe4ee]'}`}
-              >
-                <Wrench className="h-5 w-5 text-[#7000ff]" /> Usinagem CNC
               </button>
             </div>
 
@@ -376,8 +378,9 @@ export default function ProductionOrdersPage() {
             </label>
 
             <label className="mt-5 block text-sm font-semibold">
-              Dimensões e especificações <span className="font-normal text-[#68728a]">(opcional)</span>
+              Dimensões e especificações <span className="font-normal text-red-700">(obrigatório)</span>
               <textarea
+                required
                 rows={4}
                 maxLength={2000}
                 value={dimensions}
@@ -497,7 +500,7 @@ export default function ProductionOrdersPage() {
                       <form onSubmit={(event) => void handleUpdate(event, order.id)} className="mt-5 space-y-4 rounded-lg bg-[#f5f7fb] p-4">
                         <h4 className="font-bold">Editar solicitação</h4>
                         <div className="flex flex-wrap gap-2">
-                          {(['LASER_CUTTING', 'THREE_D_PRINTING', 'CNC_MACHINING'] as const).map((option) => (
+                          {(['LASER_CUTTING', 'THREE_D_PRINTING'] as const).map((option) => (
                             <button key={option} type="button" onClick={() => { setEditType(option); setEditMachineId(''); }} aria-pressed={editType === option} className={`rounded-lg border px-3 py-2 text-sm font-semibold ${editType === option ? 'border-[#7000ff] bg-violet-50' : 'border-[#dfe4ee] bg-white'}`}>
                               {getOrderTypeLabel(option)}
                             </button>
@@ -517,8 +520,8 @@ export default function ProductionOrdersPage() {
                           <input type="file" onChange={(event) => setEditFile(event.target.files?.[0] ?? null)} className="mt-2 block w-full rounded-lg border border-[#cbd2df] bg-white p-3 text-sm" />
                         </label>
                         <label className="block text-sm font-semibold">
-                          Dimensões e especificações
-                          <textarea rows={3} maxLength={2000} value={editDimensions} onChange={(event) => setEditDimensions(event.target.value)} className="mt-2 w-full rounded-lg border border-[#cbd2df] bg-white px-4 py-3 font-normal" />
+                          Dimensões e especificações <span className="font-normal text-red-700">(obrigatório)</span>
+                          <textarea required rows={3} maxLength={2000} value={editDimensions} onChange={(event) => setEditDimensions(event.target.value)} className="mt-2 w-full rounded-lg border border-[#cbd2df] bg-white px-4 py-3 font-normal" />
                         </label>
                         <label className="block text-sm font-semibold">
                           Observações adicionais

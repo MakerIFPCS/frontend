@@ -1,17 +1,18 @@
 'use client';
 
 import Link from 'next/link';
-import { CalendarDays, ChartNoAxesColumn, PackagePlus, Users, Wrench, Handshake, Scissors } from 'lucide-react';
+import { BellRing, ChartNoAxesColumn, GraduationCap, PackagePlus, Users, Wrench, Handshake, Scissors } from 'lucide-react';
 import { useAdminAccess } from '@/app/lib/use-admin-access';
 import Header from '@/app/components/header';
 
 const adminSections = [
+  { href: '/Notificacoes-ADM', title: 'Notificações', description: 'Acompanhe pedidos de fabricação e empréstimos em uma central.', icon: BellRing },
   { href: '/Maquinas-ADM', title: 'Máquinas', description: 'Gerencie os equipamentos e seus estados.', icon: Wrench },
   { href: '/Materiais-ADM', title: 'Materiais', description: 'Cadastre e consulte os materiais do laboratório.', icon: PackagePlus },
   { href: '/Emprestimos-ADM', title: 'Empréstimos', description: 'Analise, aprove ou recuse pedidos de empréstimo.', icon: Handshake },
-  { href: '/Pedidos-ADM', title: 'Pedidos de fabricação', description: 'Revise pedidos de corte a laser, impressão 3D e CNC.', icon: Scissors },
+  { href: '/Pedidos-ADM', title: 'Pedidos de fabricação', description: 'Revise pedidos de corte a laser e impressão 3D.', icon: Scissors },
+  { href: '/Capacitacoes-ADM', title: 'Capacitações', description: 'Cadastre e atualize cursos, palestras e oficinas.', icon: GraduationCap },
   { href: '/Relatorio-ADM', title: 'Relatórios', description: 'Acesse os relatórios administrativos.', icon: ChartNoAxesColumn },
-  { href: '/Agendamento-ADM', title: 'Agendamentos', description: 'Analise e atualize solicitações de uso.', icon: CalendarDays },
   { href: '/usuarios', title: 'Usuários', description: 'Consulte contas e conceda acesso administrativo.', icon: Users },
 ];
 

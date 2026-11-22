@@ -74,33 +74,6 @@ export interface MachinePayload {
   access: 'FREE' | 'RESTRICTED';
 }
 
-export interface SchedulingRequestAPI {
-  id: number;
-  code: string;
-  requesterName: string;
-  requesterType: string;
-  course?: string;
-  email: string;
-  registrationNumber: string;
-  date: string;
-  dayOfWeek: string;
-  startTime: string;
-  endTime: string;
-  purpose: string;
-  reason: string;
-  description: string;
-  equipment: string[];
-  status: string;
-  workstation?: string;
-  adminNotes?: string;
-  rejectionReason?: string;
-  decidedAt?: string;
-  decidedBy?: string;
-  createdAt: string;
-}
-
-export type SchedulingRequestPayload = Omit<SchedulingRequestAPI, 'id' | 'createdAt'>;
-
 export type LoanResourceType = 'MACHINE' | 'MATERIAL';
 export type LoanRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
@@ -218,6 +191,9 @@ export interface TrainingAPI {
   description: string;
   category: TrainingCategoryAPI;
   date: string | null;
+  startTime: string | null;
+  endTime: string | null;
+  /** Legacy field retained for existing training records and API clients. */
   time: string | null;
   location: string | null;
   image: string | null;
@@ -230,7 +206,9 @@ export interface TrainingPayload {
   description: string;
   category: TrainingCategoryAPI;
   date: string;
-  time: string;
+  startTime: string;
+  endTime: string;
+  time?: string;
   location: string;
   image?: string;
 }

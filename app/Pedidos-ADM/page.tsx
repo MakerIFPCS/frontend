@@ -10,6 +10,9 @@ import type { ProductionOrderAPI, ProductionOrderStatus } from '@/app/types/api'
 
 function getApiError(error: unknown) {
   if (isAxiosError<unknown>(error)) {
+    if (error.response?.status === 403) {
+      return 'Sua conta não tem permissão para realizar esta ação. Entre novamente com uma conta administrativa ou solicite acesso à equipe responsável.';
+    }
     const data = error.response?.data;
     if (data && typeof data === 'object') {
       const body = data as Record<string, unknown>;
@@ -18,7 +21,7 @@ function getApiError(error: unknown) {
       }
     }
     if (typeof data === 'string' && data.trim()) return data;
-    if (error.response) return `A API retornou erro HTTP ${error.response.status}.`;
+    if (error.response) return `Não foi possível concluir a solicitação (erro ${error.response.status}). Tente novamente ou entre em contato com a equipe responsável.`;
     if (error.request) return 'Não foi possível conectar à API. Verifique se o backend está em execução.';
     if (error.message) return `Falha na solicitação: ${error.message}`;
   }
@@ -45,7 +48,6 @@ const STATUS_STYLES: Record<ProductionOrderStatus, string> = {
 
 const STATUS_OPTIONS: ProductionOrderStatus[] = [
   'PENDING',
-  'WAITING_FOR_UPDATE',
   'APPROVED',
   'IN_PRODUCTION',
   'READY_FOR_PICKUP',
@@ -54,7 +56,6 @@ const STATUS_OPTIONS: ProductionOrderStatus[] = [
 const FILTER_OPTIONS: Array<{ value: ProductionOrderStatus | 'ALL'; label: string }> = [
   { value: 'ALL', label: 'Todos' },
   { value: 'PENDING', label: 'Aguardando análise' },
-  { value: 'WAITING_FOR_UPDATE', label: 'Aguardando usuário' },
   { value: 'APPROVED', label: 'Aprovados' },
   { value: 'IN_PRODUCTION', label: 'Em produção' },
   { value: 'READY_FOR_PICKUP', label: 'Prontos para retirada' },
@@ -168,10 +169,8 @@ export default function ProductionOrdersAdminPage() {
     const order = orders.find((item) => item.id === id);
     const adminNotes = notes[id]?.trim() ?? '';
     const estimatedReadyAt = estimatedReadyDates[id] ?? '';
-    if ((status === 'WAITING_FOR_UPDATE' || status === 'REJECTED') && !adminNotes) {
-      setError(status === 'WAITING_FOR_UPDATE'
-        ? 'Explique quais informações o solicitante precisa enviar antes de pedir uma atualização.'
-        : 'Informe o motivo antes de recusar o pedido.');
+    if (status === 'REJECTED' && !adminNotes) {
+      setError('Informe o motivo antes de recusar o pedido.');
       return;
     }
     if (order?.type === 'THREE_D_PRINTING' && status === 'IN_PRODUCTION' && !estimatedReadyAt) {
@@ -294,7 +293,7 @@ export default function ProductionOrdersAdminPage() {
               </li>
             ) : filteredOrders.map((order) => {
               const selectedStatus = selectedStatuses[order.id] ?? order.status;
-              const needsExplanation = selectedStatus === 'WAITING_FOR_UPDATE' || selectedStatus === 'REJECTED';
+              const needsExplanation = selectedStatus === 'REJECTED';
               return (
               <li key={order.id} className="rounded-xl border border-[#dfe4ee] bg-white p-4 shadow-sm">
                 <div className="flex flex-wrap items-center justify-between gap-3">
@@ -378,7 +377,7 @@ export default function ProductionOrdersAdminPage() {
                     {needsExplanation && (
                       <label className="block text-sm font-semibold">
                         Mensagem para o solicitante <span className="font-normal text-[#68728a]">(obrigatória)</span>
-                        <textarea rows={2} maxLength={500} value={notes[order.id] ?? ''} onChange={(event) => setNotes((current) => ({ ...current, [order.id]: event.target.value }))} className="mt-1 w-full resize-y rounded-lg border border-[#cbd2df] px-3 py-2 font-normal" placeholder={selectedStatus === 'WAITING_FOR_UPDATE' ? 'Diga o que está faltando, por exemplo o arquivo ou as dimensões.' : 'Explique por que o pedido foi recusado.'} />
+                        <textarea rows={2} maxLength={500} value={notes[order.id] ?? ''} onChange={(event) => setNotes((current) => ({ ...current, [order.id]: event.target.value }))} className="mt-1 w-full resize-y rounded-lg border border-[#cbd2df] px-3 py-2 font-normal" placeholder="Explique por que o pedido foi recusado." />
                       </label>
                     )}
                     <div className="flex justify-end">

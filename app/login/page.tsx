@@ -1,5 +1,6 @@
 'use client';
 
+import axios from 'axios';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -13,11 +14,13 @@ export default function LoginPage() {
   const router = useRouter();
   const [form, setForm] = useState<LoginRequest>({ email: '', password: '' });
   const [error, setError] = useState('');
+  const [requiresEmailVerification, setRequiresEmailVerification] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError('');
+    setRequiresEmailVerification(false);
     setIsSubmitting(true);
 
     try {
@@ -28,8 +31,13 @@ export default function LoginPage() {
       localStorage.setItem('userName', response.userName);
       window.dispatchEvent(new Event('auth-changed'));
       router.push(response.role === 'ADMIN' ? '/admin' : '/');
-    } catch {
-      setError('E-mail ou senha inválidos. Tente novamente.');
+    } catch (loginError: unknown) {
+      const message = axios.isAxiosError<{ message?: unknown }>(loginError)
+        ? loginError.response?.data?.message
+        : undefined;
+      const emailNotVerified = typeof message === 'string' && message.includes('Confirme seu e-mail');
+      setRequiresEmailVerification(emailNotVerified);
+      setError(emailNotVerified ? message : 'E-mail ou senha inválidos. Tente novamente.');
     } finally {
       setIsSubmitting(false);
     }
@@ -69,7 +77,7 @@ export default function LoginPage() {
               alt="Lab Maker" 
               width={240} 
               height={70} 
-              className="h-18 w-auto object-contain mb-2"
+              className="h-18 w-auto object-contain mb-2 dark-readable-logo"
             />
 
             {/* Campos de Entrada */}
@@ -100,7 +108,19 @@ export default function LoginPage() {
                 />
               </div>
 
-              {error && <p className="text-sm text-red-600" role="alert">{error}</p>}
+              {error && (
+                <div className="space-y-2" role="alert">
+                  <p className="text-sm text-red-600">{error}</p>
+                  {requiresEmailVerification && (
+                    <Link
+                      href={`/verify-email?email=${encodeURIComponent(form.email.trim())}`}
+                      className="inline-block text-sm font-semibold text-[#7000ff] hover:underline"
+                    >
+                      Reenviar link de confirmação
+                    </Link>
+                  )}
+                </div>
+              )}
 
               {/* Botão LOGIN */}
               <button 

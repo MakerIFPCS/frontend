@@ -109,7 +109,7 @@ export default function NormasPage() {
               alt="Lab Maker"
               width={220}
               height={60}
-              className="mx-auto mb-6 h-14 w-auto object-contain"
+              className="mx-auto mb-6 h-14 w-auto object-contain dark-readable-logo"
             />
 
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#00a67a]">

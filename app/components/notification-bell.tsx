@@ -8,12 +8,10 @@ import {
   getMyLoanRequests,
   getMyProductionOrders,
   getProductionOrders,
-  getSchedulingRequests,
 } from '@/app/lib/api';
 import type {
   LoanRequestAPI,
   ProductionOrderAPI,
-  SchedulingRequestAPI,
 } from '@/app/types/api';
 
 interface NotificationItem {
@@ -68,16 +66,20 @@ function createSnapshot(
   role: string,
   orders: ProductionOrderAPI[],
   loans: LoanRequestAPI[],
-  schedulingRequests: SchedulingRequestAPI[],
 ) {
   const snapshot: Record<string, NotificationSnapshotEntry> = {};
 
   if (role === 'ADMIN') {
+    const orderTypes: Record<ProductionOrderAPI['type'], string> = {
+      LASER_CUTTING: 'corte a laser',
+      THREE_D_PRINTING: 'impressão 3D',
+      CNC_MACHINING: 'usinagem CNC',
+    };
     for (const order of orders) {
       snapshot[`order:${order.id}`] = {
         status: order.status,
-        title: `Novo pedido #${order.id}`,
-        message: `Pedido de fabricação enviado por ${order.requesterName}.`,
+        title: `Novo pedido de ${orderTypes[order.type]} #${order.id}`,
+        message: `Pedido enviado por ${order.requesterName}.`,
         href: '/Pedidos-ADM',
         createdAt: order.createdAt,
       };
@@ -86,18 +88,9 @@ function createSnapshot(
       snapshot[`loan:${loan.id}`] = {
         status: loan.status,
         title: `Novo empréstimo #${loan.id}`,
-        message: `Solicitação enviada por ${loan.requesterName}.`,
+        message: `${loan.items.map((item) => item.name).join(', ') || 'Solicitação de itens'} · ${loan.requesterName}.`,
         href: '/Emprestimos-ADM',
         createdAt: loan.createdAt,
-      };
-    }
-    for (const request of schedulingRequests) {
-      snapshot[`scheduling:${request.id}`] = {
-        status: request.status,
-        title: `Novo agendamento ${request.code}`,
-        message: `Solicitação enviada por ${request.requesterName}.`,
-        href: '/Agendamento-ADM',
-        createdAt: request.createdAt,
       };
     }
     return snapshot;
@@ -180,7 +173,12 @@ function loadStore(key: string): NotificationStore | null {
   ) {
     throw new Error('O histórico de notificações salvo está inválido.');
   }
-  return { snapshot: parsed.snapshot, notifications: parsed.notifications };
+  return {
+    snapshot: Object.fromEntries(
+      Object.entries(parsed.snapshot).filter(([id]) => !id.startsWith('scheduling:')),
+    ),
+    notifications: parsed.notifications.filter((notification) => !notification.id.startsWith('scheduling:')),
+  };
 }
 
 function saveStore(key: string, store: NotificationStore) {
@@ -275,12 +273,12 @@ export default function NotificationBell({
 
       try {
         const previous = loadStore(storageKey);
-        const [orders, loans, schedulingRequests] = userRole === 'ADMIN'
-          ? await Promise.all([getProductionOrders(), getLoanRequests(), getSchedulingRequests()])
-          : await Promise.all([getMyProductionOrders(), getMyLoanRequests(), Promise.resolve([])]);
+        const [orders, loans] = userRole === 'ADMIN'
+          ? await Promise.all([getProductionOrders(), getLoanRequests()])
+          : await Promise.all([getMyProductionOrders(), getMyLoanRequests()]);
         if (!active) return;
         const latestStore = loadStore(storageKey) ?? previous;
-        const currentSnapshot = createSnapshot(userRole, orders, loans, schedulingRequests);
+        const currentSnapshot = createSnapshot(userRole, orders, loans);
         const newNotifications = getNewNotifications(
           latestStore,
           currentSnapshot,
@@ -459,6 +457,15 @@ export default function NotificationBell({
                 </li>
               ))}
             </ul>
+          )}
+          {userRole === 'ADMIN' && (
+            <Link
+              href="/Notificacoes-ADM"
+              onClick={() => setIsOpen(false)}
+              className="block border-t border-[#edf0f5] px-4 py-3 text-center text-sm font-bold text-[#7000ff] transition-colors hover:bg-[#f5f7fb]"
+            >
+              Abrir central de solicitações
+            </Link>
           )}
         </section>
       )}

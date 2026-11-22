@@ -2,9 +2,9 @@
 
 import { isAxiosError } from 'axios';
 import { useEffect, useState } from 'react';
-import { Boxes, PackagePlus, Pencil, X } from 'lucide-react';
+import { Boxes, PackagePlus, Pencil, Trash2, X } from 'lucide-react';
 import Header from '@/app/components/header';
-import { createMaterial, getMaterials, updateMaterial } from '@/app/lib/api';
+import { createMaterial, deleteMaterial, getMaterials, updateMaterial } from '@/app/lib/api';
 import { useAdminAccess } from '@/app/lib/use-admin-access';
 import type { MaterialAPI, MaterialPayload } from '@/app/types/api';
 
@@ -26,6 +26,7 @@ export default function MaterialsAdminPage() {
   const [editingMaterialId, setEditingMaterialId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deletingMaterialId, setDeletingMaterialId] = useState<number | null>(null);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
 
@@ -79,10 +80,38 @@ export default function MaterialsAdminPage() {
       setError(
         typeof apiMessage === 'string'
           ? apiMessage
-          : 'Não foi possível cadastrar o material. Confira os dados e tente novamente.',
+          : 'Não foi possível salvar o material. Confira os dados e tente novamente.',
       );
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  async function handleDelete(material: MaterialAPI) {
+    if (!window.confirm(`Deseja retirar o material ${material.name}?`)) return;
+    setError('');
+    setNotice('');
+    setDeletingMaterialId(material.id);
+
+    try {
+      await deleteMaterial(material.id);
+      setMaterials((current) => current.filter((item) => item.id !== material.id));
+      if (editingMaterialId === material.id) {
+        setEditingMaterialId(null);
+        setForm(EMPTY_FORM);
+      }
+      setNotice(`${material.name} retirado com sucesso.`);
+    } catch (deleteError) {
+      const apiMessage = isAxiosError<{ message?: unknown }>(deleteError)
+        ? deleteError.response?.data?.message
+        : undefined;
+      setError(
+        typeof apiMessage === 'string'
+          ? apiMessage
+          : `Não foi possível retirar ${material.name}. Tente novamente.`,
+      );
+    } finally {
+      setDeletingMaterialId(null);
     }
   }
 
@@ -173,6 +202,7 @@ export default function MaterialsAdminPage() {
                 type="submit"
                 disabled={
                   isSubmitting
+                  || deletingMaterialId !== null
                   || form.quantity.trim() === ''
                   || !Number.isInteger(Number(form.quantity))
                   || Number(form.quantity) < 0
@@ -230,6 +260,7 @@ export default function MaterialsAdminPage() {
                       <p className="text-sm font-bold">{material.quantity} {material.unit}</p>
                       <button
                         type="button"
+                        disabled={isSubmitting || deletingMaterialId !== null}
                         aria-label={`Editar ${material.name}`}
                         onClick={() => {
                           setEditingMaterialId(material.id);
@@ -242,9 +273,20 @@ export default function MaterialsAdminPage() {
                           setError('');
                           setNotice('');
                         }}
-                        className="rounded-lg p-2 text-[#56617d] hover:bg-[#f0eaff] hover:text-[#7000ff]"
+                        className="rounded-lg p-2 text-[#56617d] hover:bg-[#f0eaff] hover:text-[#7000ff] disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <Pencil className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        disabled={isSubmitting || deletingMaterialId !== null}
+                        aria-label={`Retirar ${material.name}`}
+                        onClick={() => void handleDelete(material)}
+                        className="rounded-lg p-2 text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {deletingMaterialId === material.id
+                          ? <span className="block h-4 w-4 animate-spin rounded-full border-2 border-red-700 border-t-transparent" aria-hidden="true" />
+                          : <Trash2 className="h-4 w-4" />}
                       </button>
                     </div>
                   </li>

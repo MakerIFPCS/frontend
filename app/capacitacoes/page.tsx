@@ -5,37 +5,14 @@ import Image from 'next/image';
 import {
   ArrowDown,
   CalendarDays,
-  CheckCircle2,
   Clock3,
-  Globe,
   MapPin,
   RefreshCw,
   Search,
   Sparkles,
-  X,
 } from 'lucide-react';
 import Header from '@/app/components/header';
-
-export type TrainingCategoryAPI =
-  | 'COURSE'
-  | 'WORKSHOP'
-  | 'LECTURE'
-  | 'TRAINING'
-  | 'Curso'
-  | 'Oficina'
-  | 'Palestra'
-  | 'Treinamento';
-
-export interface TrainingAPI {
-  id: number;
-  name: string;
-  description: string;
-  category?: TrainingCategoryAPI | string;
-  date?: string;
-  time?: string;
-  location?: string;
-  image?: string | null;
-}
+import type { TrainingAPI } from '@/app/types/api';
 
 type FilterOption = 'Todos' | 'Cursos' | 'Oficinas' | 'Palestras' | 'Treinamentos';
 type IllustrationType = 'fusion360' | 'arduino' | 'python';
@@ -107,7 +84,7 @@ function getTrainingIllustration(training: TrainingAPI): IllustrationType {
   return 'fusion360';
 }
 
-function formatTrainingDate(dateValue?: string): string {
+function formatTrainingDate(dateValue?: string | null): string {
   if (!dateValue) return 'A definir';
   if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateValue)) return dateValue;
 
@@ -118,6 +95,12 @@ function formatTrainingDate(dateValue?: string): string {
   return dateValue;
 }
 
+function formatTrainingTime(training: Pick<TrainingAPI, 'startTime' | 'endTime' | 'time'>): string {
+  const startTime = training.startTime || training.time;
+  if (startTime && training.endTime) return `${startTime.slice(0, 5)} - ${training.endTime.slice(0, 5)}`;
+  return startTime?.slice(0, 5) || training.endTime?.slice(0, 5) || 'A definir';
+}
+
 export default function CapacitacoesPage() {
   const [trainings, setTrainings] = useState<TrainingAPI[]>([]);
   const [selectedFilter, setSelectedFilter] = useState<FilterOption>('Todos');
@@ -125,8 +108,6 @@ export default function CapacitacoesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const [subscribedIds, setSubscribedIds] = useState<number[]>([]);
-  const [activeTrainingModal, setActiveTrainingModal] = useState<TrainingAPI | null>(null);
 
   useEffect(() => {
     fetchTrainingsFromAPI()
@@ -141,24 +122,6 @@ export default function CapacitacoesPage() {
       )
       .finally(() => setIsLoading(false));
   }, []);
-
-  useEffect(() => {
-    if (!activeTrainingModal) return;
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setActiveTrainingModal(null);
-      }
-    };
-
-    document.body.style.overflow = 'hidden';
-    window.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      document.body.style.overflow = '';
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [activeTrainingModal]);
 
   async function handleRefresh() {
     setIsLoading(true);
@@ -203,21 +166,6 @@ export default function CapacitacoesPage() {
   function handleScrollToEvents() {
     const section = document.getElementById('proximos-eventos');
     section?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
-
-  function handleOpenEnrollModal(training: TrainingAPI) {
-    setActiveTrainingModal(training);
-  }
-
-  function handleConfirmEnroll(trainingId: number) {
-    setSubscribedIds((current) =>
-      current.includes(trainingId) ? current : [...current, trainingId],
-    );
-  }
-
-  function handleCancelEnroll(trainingId: number) {
-    setSubscribedIds((current) => current.filter((id) => id !== trainingId));
-    setActiveTrainingModal(null);
   }
 
   return (
@@ -406,7 +354,6 @@ export default function CapacitacoesPage() {
           ) : (
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
               {filteredTrainings.map((training) => {
-                const isSubscribed = subscribedIds.includes(training.id);
                 const categoryLabel = getCategoryLabel(training.category);
 
                 return (
@@ -434,12 +381,6 @@ export default function CapacitacoesPage() {
                         <span className="inline-block rounded-full bg-[#f0eaff] px-3.5 py-1 text-xs font-extrabold uppercase tracking-wider text-[#7000ff]">
                           {categoryLabel}
                         </span>
-                        {isSubscribed && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">
-                            <CheckCircle2 className="h-3.5 w-3.5" />
-                            Inscrito
-                          </span>
-                        )}
                       </div>
 
                       <h2 className="text-xl font-extrabold leading-snug text-[#050b33]">
@@ -463,7 +404,7 @@ export default function CapacitacoesPage() {
                           <Clock3 className="h-4 w-4 shrink-0 text-[#7000ff]" />
                           <span>
                             <strong className="font-semibold text-[#050b33]">Horário:</strong>{' '}
-                            {training.time || 'A definir'}
+                            {formatTrainingTime(training)}
                           </span>
                         </div>
 
@@ -476,19 +417,6 @@ export default function CapacitacoesPage() {
                         </div>
                       </div>
 
-                      <div className="mt-auto pt-6">
-                        <button
-                          type="button"
-                          onClick={() => handleOpenEnrollModal(training)}
-                          className={`w-full rounded-xl px-4 py-3 text-sm font-extrabold transition-all cursor-pointer ${
-                            isSubscribed
-                              ? 'border border-[#7000ff]/30 bg-[#f0eaff] text-[#7000ff] hover:bg-[#e5dbff]'
-                              : 'bg-[#00ff9d] text-[#050b33] shadow-sm hover:bg-[#4affb8]'
-                          }`}
-                        >
-                          {isSubscribed ? 'Ver inscrição' : 'Inscrever-se'}
-                        </button>
-                      </div>
                     </div>
                   </article>
                 );
@@ -497,232 +425,9 @@ export default function CapacitacoesPage() {
           )}
         </section>
 
-        {/* E) RODAPÉ / CHAMADA FINAL */}
-        <section className="mx-auto max-w-6xl px-6 pb-14 sm:px-8">
-          <div className="relative overflow-hidden rounded-2xl border border-[#dfe4ee] bg-[#eef1ff] px-6 py-10 text-center shadow-sm sm:px-10">
-            <div className="pointer-events-none absolute -left-10 -top-10 h-32 w-32 rounded-full bg-[#7000ff]/10 blur-2xl" />
-            <div className="pointer-events-none absolute -bottom-10 -right-10 h-32 w-32 rounded-full bg-[#00ff9d]/20 blur-2xl" />
-
-            <div className="relative z-10 mx-auto max-w-xl">
-              <h2 className="text-2xl font-extrabold text-[#050b33] sm:text-3xl">
-                Fique por dentro!
-              </h2>
-              <p className="mt-2.5 text-sm leading-6 text-[#56617d] sm:text-base">
-                Acompanhe nossas redes e não perca as próximas capacitações.
-              </p>
-
-              <div className="mt-6 flex items-center justify-center gap-4">
-                <a
-                  href="#redes-instagram"
-                  onClick={(e) => e.preventDefault()}
-                  aria-label="Instagram do Lab Maker"
-                  title="Instagram"
-                  className="flex h-11 w-11 items-center justify-center rounded-full bg-[#050b33] text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-[#7000ff]"
-                >
-                  <InstagramIcon />
-                </a>
-                <a
-                  href="#redes-youtube"
-                  onClick={(e) => e.preventDefault()}
-                  aria-label="YouTube do Lab Maker"
-                  title="YouTube"
-                  className="flex h-11 w-11 items-center justify-center rounded-full bg-[#050b33] text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-[#7000ff]"
-                >
-                  <YoutubeIcon />
-                </a>
-                <a
-                  href="#redes-linkedin"
-                  onClick={(e) => e.preventDefault()}
-                  aria-label="LinkedIn do Lab Maker"
-                  title="LinkedIn"
-                  className="flex h-11 w-11 items-center justify-center rounded-full bg-[#050b33] text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-[#7000ff]"
-                >
-                  <LinkedinIcon />
-                </a>
-                <a
-                  href="#redes-portal"
-                  onClick={(e) => e.preventDefault()}
-                  aria-label="Portal do Lab Maker"
-                  title="Portal Institucional"
-                  className="flex h-11 w-11 items-center justify-center rounded-full bg-[#050b33] text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-[#7000ff]"
-                >
-                  <Globe className="h-5 w-5" />
-                </a>
-              </div>
-            </div>
-          </div>
-        </section>
       </main>
 
-      {activeTrainingModal && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="modal-inscricao-titulo"
-          onClick={() => setActiveTrainingModal(null)}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-[#050b33]/60 p-4 backdrop-blur-sm"
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-md rounded-2xl border border-[#dfe4ee] bg-white p-6 text-[#050b33] shadow-2xl"
-          >
-            <button
-              type="button"
-              onClick={() => setActiveTrainingModal(null)}
-              aria-label="Fechar aviso de inscrição"
-              className="absolute right-4 top-4 rounded-lg p-1.5 text-[#56617d] transition hover:bg-[#f5f7fb] hover:text-[#050b33] cursor-pointer"
-            >
-              <X className="h-5 w-5" />
-            </button>
-
-            <span className="inline-block rounded-full bg-[#f0eaff] px-3 py-1 text-xs font-extrabold uppercase tracking-wider text-[#7000ff]">
-              {getCategoryLabel(activeTrainingModal.category)}
-            </span>
-
-            <h3 id="modal-inscricao-titulo" className="mt-3 text-xl font-extrabold">
-              {activeTrainingModal.name}
-            </h3>
-
-            <p className="mt-2 text-sm leading-6 text-[#56617d]">
-              {activeTrainingModal.description || 'Sem descrição cadastrada.'}
-            </p>
-
-            <div className="mt-4 space-y-2 rounded-xl bg-[#f5f7fb] p-4 text-sm text-[#56617d]">
-              <div className="flex items-center gap-2">
-                <CalendarDays className="h-4 w-4 text-[#7000ff]" />
-                <span>
-                  <strong className="text-[#050b33]">Data:</strong>{' '}
-                  {formatTrainingDate(activeTrainingModal.date)}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Clock3 className="h-4 w-4 text-[#7000ff]" />
-                <span>
-                  <strong className="text-[#050b33]">Horário:</strong>{' '}
-                  {activeTrainingModal.time || 'A definir'}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-[#7000ff]" />
-                <span>
-                  <strong className="text-[#050b33]">Local:</strong>{' '}
-                  {activeTrainingModal.location || 'Laboratório Maker'}
-                </span>
-              </div>
-            </div>
-
-            {subscribedIds.includes(activeTrainingModal.id) ? (
-              <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50 p-3.5 text-xs leading-5 text-emerald-800">
-                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
-                <span>
-                  Inscrição registrada! Compareça ao{' '}
-                  <strong>{activeTrainingModal.location || 'Laboratório Maker'}</strong> na data e
-                  horário indicados.
-                </span>
-              </div>
-            ) : (
-              <p className="mt-4 text-xs leading-5 text-[#68728a]">
-                Confirme abaixo para registrar sua participação nesta capacitação.
-              </p>
-            )}
-
-            <div className="mt-6 flex flex-wrap items-center justify-end gap-3">
-              {subscribedIds.includes(activeTrainingModal.id) ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => handleCancelEnroll(activeTrainingModal.id)}
-                    className="rounded-xl border border-[#dfe4ee] px-4 py-2.5 text-sm font-bold text-[#56617d] transition hover:bg-[#f5f7fb] cursor-pointer"
-                  >
-                    Cancelar inscrição
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTrainingModal(null)}
-                    className="rounded-xl bg-[#050b33] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[#7000ff] cursor-pointer"
-                  >
-                    Fechar
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTrainingModal(null)}
-                    className="rounded-xl border border-[#dfe4ee] px-4 py-2.5 text-sm font-bold text-[#56617d] transition hover:bg-[#f5f7fb] cursor-pointer"
-                  >
-                    Voltar
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleConfirmEnroll(activeTrainingModal.id)}
-                    className="rounded-xl bg-[#00ff9d] px-5 py-2.5 text-sm font-extrabold text-[#050b33] transition hover:bg-[#4affb8] cursor-pointer"
-                  >
-                    Confirmar inscrição
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
-  );
-}
-
-function InstagramIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="h-5 w-5"
-      aria-hidden="true"
-    >
-      <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
-      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-      <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
-    </svg>
-  );
-}
-
-function YoutubeIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="h-5 w-5"
-      aria-hidden="true"
-    >
-      <path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17" />
-      <path d="m10 15 5-3-5-3z" />
-    </svg>
-  );
-}
-
-function LinkedinIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="h-5 w-5"
-      aria-hidden="true"
-    >
-      <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
-      <rect width="4" height="12" x="2" y="9" />
-      <circle cx="4" cy="4" r="2" />
-    </svg>
   );
 }
 
